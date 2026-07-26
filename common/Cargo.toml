@@ -5,3 +5,5 @@ edition = "2024"
 
 [dependencies]
 anyhow = "1.0.104"
+tracing = "0.1.44"
+zip = "8.6.0"

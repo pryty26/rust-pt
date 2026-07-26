@@ -3,10 +3,9 @@ use std::fs::{File, create_dir_all};
 use std::io::Write;
 use std::path::PathBuf;
 use std::process::Command;
-#[cfg(windows)]
-const XRAY_CMD: &str = "xray.exe";
-#[cfg(not(windows))]
-const XRAY_CMD: &str = "xray";
+pub mod variable;
+use variable::XRAY_CMD;
+pub mod download;
 /// Creates a file at the specified path,
 /// creating any necessary parent directories.
 pub fn create_all_path(path: &PathBuf) -> Result<File> {

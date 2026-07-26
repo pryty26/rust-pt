@@ -59,4 +59,10 @@ pub const XRAY_FILE_NAME: &'static str = "Xray-openbsd-32.zip";
     all(target_os = "openbsd", target_arch = "x86_64"),
     all(target_os = "openbsd", target_arch = "x86"),
 )))]
-compile_error!("Unsupported platform: Xray-core does not provide pre-built binaries for this target");
+compile_error!(
+    "Unsupported platform: Xray-core does not provide pre-built binaries for this target"
+);
+#[cfg(windows)]
+pub(crate) const XRAY_CMD: &str = "xray.exe";
+#[cfg(not(windows))]
+pub(crate) const XRAY_CMD: &str = "xray";
