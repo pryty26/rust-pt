@@ -5,7 +5,8 @@ use std::path::PathBuf;
 use std::process::Command;
 pub mod variable;
 use variable::XRAY_CMD;
-pub mod download;
+pub mod reality_common;
+pub use reality_common::download::get_xray;
 /// Creates a file at the specified path,
 /// creating any necessary parent directories.
 pub fn create_all_path(path: &PathBuf) -> Result<File> {
@@ -14,6 +15,7 @@ pub fn create_all_path(path: &PathBuf) -> Result<File> {
     }
     Ok(File::create(path)?)
 }
+
 /// Creates a pair of x25519 keys and writes them to the specified files.
 pub fn create_keys(
     private_key_path: Option<&PathBuf>,

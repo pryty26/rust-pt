@@ -5,6 +5,7 @@ use std::process::Command;
 use std::{fs, fs::File};
 use tracing::info;
 use zip::ZipArchive;
+use std::env::set_current_dir;
 /// unzip the downloaded xray zip file
 fn unzip(file: PathBuf) -> Result<PathBuf> {
     let file = File::open(file)?;
@@ -53,4 +54,8 @@ pub fn get_xray() -> Result<()> {
     }
     info!("Downloaded xray successfully.");
     Ok(())
+}
+
+fn start_xray() -> Result<()> {
+    set_current_dir(path);
 }
