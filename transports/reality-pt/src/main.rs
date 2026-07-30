@@ -5,8 +5,8 @@ use std::path::PathBuf;
 use std::process::Command;
 pub mod variable;
 use variable::XRAY_CMD;
-pub mod reality_common;
-pub use reality_common::download::get_xray;
+pub mod download;
+pub use download::get_xray;
 /// Creates a file at the specified path,
 /// creating any necessary parent directories.
 pub fn create_all_path(path: &PathBuf) -> Result<File> {

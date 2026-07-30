@@ -1,17 +1,15 @@
 pub use crate::variable::XRAY_FILE_NAME;
 use anyhow::Result;
+use std::env::set_current_dir;
 use std::path::PathBuf;
 use std::process::Command;
 use std::{fs, fs::File};
-use tracing::info;
 use zip::ZipArchive;
-use std::env::set_current_dir;
 /// unzip the downloaded xray zip file
 fn unzip(file: PathBuf) -> Result<PathBuf> {
     let file = File::open(file)?;
     let mut archive = ZipArchive::new(file)?;
     archive.extract(".")?;
-    info!("Unzipped xray successfully.");
     #[cfg(unix)]
     let exe_path = PathBuf::from("xray");
     #[cfg(windows)]
@@ -52,7 +50,6 @@ pub fn get_xray() -> Result<()> {
             eprintln!("Error: unable to change permissions");
         }
     }
-    info!("Downloaded xray successfully.");
     Ok(())
 }
 
