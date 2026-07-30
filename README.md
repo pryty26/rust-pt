@@ -91,3 +91,13 @@ For open source projects, say how it is licensed.
 
 ## Project status
 If you have run out of energy or time for your project, put a note at the top of the README saying that development has slowed down or stopped completely. Someone may choose to fork your project or volunteer to step in as a maintainer or owner, allowing your project to keep going. You can also make an explicit request for maintainers.
+
+/*
+TODO: 
+1 pt_err add InvallidConfigErr, consider maybe separate InvallidServerConfigErr??
+rust-pt\rust_pt\pt_err\src\main.rs
+2. 
+Add build_with_check macro using derive-deftly(Which developes by Ian :-) )
+3. Add deserialize for Common/Server/ClientConfig
+4. Add trait for PT
+*/
