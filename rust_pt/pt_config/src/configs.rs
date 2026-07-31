@@ -1,9 +1,42 @@
-#![allow(non_camel_case_types)]
+#![allow(non_snake_case)]
 use serde::{Deserialize, Serialize};
 use std::net::{Ipv4Addr, Ipv6Addr};
 use std::path::PathBuf;
+use std::convert::TryFrom;
+use pt_err::ConfigError;
+use crate::mode;
+#[derive(Debug, Deserialize)]
+pub(crate) struct RawCommonKey {
+    TOR_PT_MANAGED_TRANSPORT_VER: u64,
+    TOR_PT_STATE_LOCATION: PathBuf,
+    TOR_PT_EXIT_ON_STDIN_CLOSE: i8,
+    TOR_PT_OUTBOUND_BIND_ADDRESS_V4: Ipv4Addr,
+    TOR_PT_OUTBOUND_BIND_ADDRESS_V6: Ipv6Addr,
+}
 
+impl TryFrom<RawCommonKey> for CommonKey {
+    type Error = ConfigError::InvalidConfigErr;
+
+    fn try_from(raw: RawCommonKey) -> Result<Self, Self::Error> {
+        match raw.TOR_PT_EXIT_ON_STDIN_CLOSE{
+            0 | 1 => {}
+            _ => return InvalidConfigErr { side: mode.to_string, message: "TOR_PT_EXIT_ON_STDIN_CLOSE should be 1 or 0".to_string()},
+        }
+        Ok(
+            CommonKey {
+                TOR_PT_MANAGED_TRANSPORT_VER: raw.TOR_PT_MANAGED,
+                TOR_PT_STATE_LOCATION: raw.TOR_PT_STATE_LOCATION,
+                TOR_PT_EXIT_ON_STDIN_CLOSE: raw.TOR_PT_EXIT_ON_STDIN_CLOSE,
+                TOR_PT_OUTBOUND_BIND_ADDRESS_V4: raw.TOR_PT_OUTBOUND_BIND_ADDRESS_V4,
+                TOR_PT_OUTBOUND_BIND_ADDRESS_V6: raw.TOR_PT_OUTBOUND_BIND_ADDRESS_V6,
+            }
+        )
+    }
+}
+
+/// Common settings which is needed at both server side and client side
 #[derive(Debug, Serialize, Deserialize)]
+#[serde(try_from = "RawCommonKey")]
 pub(crate) struct CommonKey {
     TOR_PT_MANAGED_TRANSPORT_VER: u64,
     TOR_PT_STATE_LOCATION: PathBuf,
