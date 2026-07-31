@@ -9,3 +9,6 @@ serde = { workspace = true}
 serde_json = { workspace = true}
 toml = { workspace = true }
 derive-deftly = { workspace = true }
+pt_err = { path = "../pt_err" }
+once_cell = { workspace = true }
+dotenv = { workspace = true }
