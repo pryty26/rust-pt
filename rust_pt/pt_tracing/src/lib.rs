@@ -44,7 +44,24 @@
 #![deny(clippy::unused_async)]
 #![deny(clippy::string_slice)] // See arti#2571
 //! <!-- @@ end lint list
+use tracing_subscriber;
 
-fn main() {
-    println!("Hello, world!");
+/// Config of pt_tracing,
+/// user could change it via different function
+pub struct PtTracingConfig {}
+impl PtTracingConfig {
+    pub fn init() {
+        tracing_subscriber::fmt()
+            .compact()
+            .with_level(false)
+            .with_target(false)
+            .with_thread_ids(false)
+            .with_thread_names(false)
+            .with_file(false)
+            .with_line_number(false)
+            .with_line_number(false)
+            .with_ansi(false)
+            .without_time()
+            .init();
+    }
 }
