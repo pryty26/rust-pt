@@ -52,7 +52,8 @@ pub fn get_xray() -> Result<()> {
     }
     Ok(())
 }
-
+/*
 fn start_xray() -> Result<()> {
     set_current_dir(path);
 }
+*/

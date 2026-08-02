@@ -3,12 +3,17 @@ name = "pt_config"
 version = "0.1.0"
 edition = "2024"
 
+
 [dependencies]
 anyhow = { workspace = true }
 serde = { workspace = true}
 serde_json = { workspace = true}
 toml = { workspace = true }
 derive-deftly = { workspace = true }
+# All errors
 pt_err = { path = "../pt_err" }
+# logs
+# TODO: We should implement pt_tracing before doing pt_core or complex pt_config
+pt_tracing = { path = "../pt_tracing" }
 once_cell = { workspace = true }
 dotenv = { workspace = true }

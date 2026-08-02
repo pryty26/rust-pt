@@ -1,10 +1,12 @@
 #![allow(non_snake_case)]
+use crate::MODE;
+use pt_err::ConfigError;
 use serde::{Deserialize, Serialize};
+use std::convert::TryFrom;
 use std::net::{Ipv4Addr, Ipv6Addr};
 use std::path::PathBuf;
-use std::convert::TryFrom;
-use pt_err::ConfigError;
-use crate::mode;
+
+/// RawCommonKey is used to validate the config is valid
 #[derive(Debug, Deserialize)]
 pub(crate) struct RawCommonKey {
     TOR_PT_MANAGED_TRANSPORT_VER: u64,
@@ -15,22 +17,25 @@ pub(crate) struct RawCommonKey {
 }
 
 impl TryFrom<RawCommonKey> for CommonKey {
-    type Error = ConfigError::InvalidConfigErr;
+    type Error = ConfigError;
 
     fn try_from(raw: RawCommonKey) -> Result<Self, Self::Error> {
-        match raw.TOR_PT_EXIT_ON_STDIN_CLOSE{
+        match raw.TOR_PT_EXIT_ON_STDIN_CLOSE {
             0 | 1 => {}
-            _ => return InvalidConfigErr { side: mode.to_string, message: "TOR_PT_EXIT_ON_STDIN_CLOSE should be 1 or 0".to_string()},
-        }
-        Ok(
-            CommonKey {
-                TOR_PT_MANAGED_TRANSPORT_VER: raw.TOR_PT_MANAGED,
-                TOR_PT_STATE_LOCATION: raw.TOR_PT_STATE_LOCATION,
-                TOR_PT_EXIT_ON_STDIN_CLOSE: raw.TOR_PT_EXIT_ON_STDIN_CLOSE,
-                TOR_PT_OUTBOUND_BIND_ADDRESS_V4: raw.TOR_PT_OUTBOUND_BIND_ADDRESS_V4,
-                TOR_PT_OUTBOUND_BIND_ADDRESS_V6: raw.TOR_PT_OUTBOUND_BIND_ADDRESS_V6,
+            _ => {
+                return Err(ConfigError::InvalidConfigErr {
+                    side: (*MODE).into(),
+                    message: "TOR_PT_EXIT_ON_STDIN_CLOSE should be 1 or 0".to_string(),
+                });
             }
-        )
+        }
+        Ok(CommonKey {
+            TOR_PT_MANAGED_TRANSPORT_VER: raw.TOR_PT_MANAGED_TRANSPORT_VER,
+            TOR_PT_STATE_LOCATION: raw.TOR_PT_STATE_LOCATION,
+            TOR_PT_EXIT_ON_STDIN_CLOSE: raw.TOR_PT_EXIT_ON_STDIN_CLOSE,
+            TOR_PT_OUTBOUND_BIND_ADDRESS_V4: raw.TOR_PT_OUTBOUND_BIND_ADDRESS_V4,
+            TOR_PT_OUTBOUND_BIND_ADDRESS_V6: raw.TOR_PT_OUTBOUND_BIND_ADDRESS_V6,
+        })
     }
 }
 
