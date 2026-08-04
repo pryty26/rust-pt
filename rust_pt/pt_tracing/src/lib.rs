@@ -44,13 +44,32 @@
 #![deny(clippy::unused_async)]
 #![deny(clippy::string_slice)] // See arti#2571
 //! <!-- @@ end lint list
+//! For detailed information, see [the spec] https://spec.torproject.org/pt-spec/ipc.html
+use anyhow::Result;
+use tracing::{debug, error, info, warn};
 use tracing_subscriber;
-
+/// The SEVERITY value indicate at which logging level the message applies.
+/// The accepted values for <Severity> are: error, warning, notice, info, debug
+#[repr(u8)]
+#[derive(Clone, Copy)]
+pub(crate) enum SEVERITY {
+    DEBUG = 1,
+    LOG = 2,
+    NOTICE = 3,
+    WARNING = 4,
+    ERROR = 5,
+}
 /// Config of pt_tracing,
 /// user could change it via different function
-pub struct PtTracingConfig {}
-impl PtTracingConfig {
-    pub fn init() {
+pub struct PtTracing {
+    /// The SEVERITY value indicate at which logging level the message applies.
+    /// The accepted values for <Severity> are: error, warning, notice, info, debug
+    pub severity: SEVERITY,
+}
+impl PtTracing {
+    /// init the config with PtTracingConfig
+    /// TODO: add more flexible configuration
+    pub fn init(&self) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         tracing_subscriber::fmt()
             .compact()
             .with_level(false)
@@ -62,6 +81,40 @@ impl PtTracingConfig {
             .with_line_number(false)
             .with_ansi(false)
             .without_time()
-            .init();
+            .try_init()?;
+        Ok(())
+    }
+    /// Return a new PtTracingConfig
+    pub fn new(severity: SEVERITY) -> Self {
+        PtTracing { severity: severity }
+    }
+    /// Print a debug message, conform with Tor-Pt Spec
+    pub fn debug(&self, message: String) -> Result<()> {
+        debug!("LOG SEVERITY=debug MESSAGE={}", message);
+        Ok(())
+    }
+    /// Print an info message, conform with Tor-Pt Spec
+    pub fn info(&self, message: String) -> Result<()> {
+        info!("LOG SEVERITY=error MESSAGE={}", message);
+        Ok(())
+    }
+
+    /// Print an error message, conform with Tor-Pt Spec
+    pub fn error(&self, message: String) -> Result<()> {
+        error!("LOG SEVERITY=error MESSAGE={}", message);
+        Ok(())
+    }
+
+    /// Print a notice message, conform with Tor-Pt Spec
+    pub fn notice(&self, message: String) -> Result<()> {
+        if self.severity {}
+        println!("LOG SEVERITY=notice MESSAGE={}", message);
+        Ok(())
+    }
+
+    /// Print a warning message, conform with Tor-Pt Spec
+    pub fn warn(&self, message: String) -> Result<()> {
+        warn!("LOG SEVERITY=warn MESSAGE={}", message);
+        Ok(())
     }
 }

@@ -59,3 +59,13 @@ pub enum ConfigError {
         message: String,
     },
 }
+/// Errors which could cause by variant
+#[derive(Debug, Error, PartialEq)]
+pub enum VariantError {
+    /// Error indicates that the Variant hasn't found
+    #[error("Variant Unfound {message}")]
+    UnfoundError {
+        /// Additiional context of the Error
+        message: String,
+    },
+}
