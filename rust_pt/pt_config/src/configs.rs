@@ -6,8 +6,11 @@ use std::convert::TryFrom;
 use std::net::{Ipv4Addr, Ipv6Addr};
 use std::path::PathBuf;
 
-/// RawCommonKey is used to validate the config is valid
+/// RawCommonKey is used to validate that the config is valid
+/// #[allow(unused)] is fine in this situation,
+/// since this is only to validate the config
 #[derive(Debug, Deserialize)]
+#[allow(unused)]
 pub(crate) struct RawCommonKey {
     TOR_PT_MANAGED_TRANSPORT_VER: u64,
     TOR_PT_STATE_LOCATION: PathBuf,
@@ -42,6 +45,7 @@ impl TryFrom<RawCommonKey> for CommonKey {
 /// Common settings which is needed at both server side and client side
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(try_from = "RawCommonKey")]
+#[allow(unused)]
 pub(crate) struct CommonKey {
     TOR_PT_MANAGED_TRANSPORT_VER: u64,
     TOR_PT_STATE_LOCATION: PathBuf,
