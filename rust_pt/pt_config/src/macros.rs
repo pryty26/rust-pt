@@ -13,7 +13,7 @@ define_derive_deftly! {
     ///     A,
     ///     B,
     /// }
-    /// 
+    ///
     /// fn main() -> Result<()> {
     ///     let x = Ex::try_from("A".to_string()).unwrap();
     ///     match x {
@@ -87,13 +87,13 @@ define_derive_deftly! {
     ///     Ok(())
     /// }
     /// ```
-    /// would build -> 
+    /// would build ->
     /// impl Ex {
     ///     fn from_u8_index(v: usize) -> Result<Self, pt_err::VariantError> {
     ///         match v {
     ///             0 => Ex::A,
     ///             1 => Ex::B,
-    ///             _ => { 
+    ///             _ => {
     ///                 return Err(pt_err::VariantError::UnfoundError {
     ///                     message: "".to_string()
     ///                 });
@@ -102,7 +102,7 @@ define_derive_deftly! {
     ///     }
     /// }
     ///
-    /// 
+    ///
     /// TODO: I use $vindex due $v_explicit_discriminant is not stable yet
     export FromU8Index for enum:
     impl $ttype {
