@@ -2,7 +2,7 @@
 # This script is from Arti(developed by Torproject)
 # The author(pryty26) is so lazy so if you have any question:
 # See arti#xxx
-
+# (I don't think that's a problem, since this is a project for tor-pt)
 import argparse
 import fnmatch
 import sys
