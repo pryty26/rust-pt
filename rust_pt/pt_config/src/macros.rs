@@ -5,7 +5,8 @@ define_derive_deftly! {
     /// ```rust
     /// pub use derive_deftly::{define_derive_deftly, Deftly};
     /// pub use pt_config::derive_deftly_template_FromString;
-    /// pub use anyhow::Result;
+    /// use anyhow::Result;
+    /// use std::str::FromStr;
     /// #[repr(u8)]
     /// #[derive(Debug, Clone, Copy, Deftly)]
     /// #[derive_deftly(FromString)]
@@ -18,7 +19,20 @@ define_derive_deftly! {
     ///     let x = Ex::try_from("A".to_string()).unwrap();
     ///     match x {
     ///         Ex::A => println!("success"),
-    ///         _ => panic!("_")
+    ///         _ => panic!("try_from failed")
+    ///     }
+    ///
+    ///     let y = Ex::from_str("A").unwrap();
+    ///     match y {
+    ///         Ex::A => println!("success"),
+    ///         _ => panic!("from_str failed")
+    ///     }
+    ///
+    ///     let z = String::from(Ex::A);
+    ///     let z_excepted = "Ex::A".to_string();
+    ///     match z {
+    ///         z_excepted => println!("success"),
+    ///         _ => panic!("String::from failed")
     ///     }
     ///     Ok(())
     /// }
@@ -28,7 +42,7 @@ define_derive_deftly! {
         fn from(value: $ttype) -> Self {
             match value {
                 $(
-                    $vpat => stringify!($vtype).to_string(),
+                    $vpat => stringify!($vpat).to_string(),
                 )
             }
         }
@@ -82,7 +96,12 @@ define_derive_deftly! {
     ///     let x = Ex::from_u8_index(0 as usize).unwrap();
     ///     match x {
     ///         Ex::A => println!("success"),
-    ///         _ => panic!("_")
+    ///         _ => panic!("Ex::from_u8_index failed")
+    ///     }
+    ///     let y = Ex::B.get_index().unwrap();
+    ///     match y {
+    ///         1 => println!("get_index() success"),
+    ///         err => panic!("get_index() failed: {}", err),
     ///     }
     ///     Ok(())
     /// }
@@ -110,6 +129,17 @@ define_derive_deftly! {
             match v {
                 $(
                     $vindex => Ok($vpat),
+                )
+                _ => { return Err(pt_err::VariantError::UnfoundError {
+                    message: "".to_string()
+                });
+            }
+            }
+        }
+        fn get_index(&self) -> Result<usize, pt_err::VariantError> {
+            match self {
+                $(
+                    $vpat => Ok($vindex),
                 )
                 _ => { return Err(pt_err::VariantError::UnfoundError {
                     message: "".to_string()
