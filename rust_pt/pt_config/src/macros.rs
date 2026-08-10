@@ -1,6 +1,20 @@
+///! For grammar of derive-deftly:
+///! See: https://docs.rs/derive-deftly/1.11.5/derive_deftly/doc_reference/index.html
+///! TODO:
+///! For codes like:
+///! _ => { return Err(pt_err::VariantError::UnfoundError {
+///!    message: "".to_string()
+///! });
+///! We could iterate the enum using $vname/$vindex to tell the user
+///! what kind of String/Index/else would be valid
+///! But leave it for now, we should open an Issue for that  
 use derive_deftly::define_derive_deftly;
 define_derive_deftly! {
     /// Implement to string via iterate the enum
+    /// # Errors
+    /// from_str() and Ex::try_from Returns `UnfoundError`
+    /// if the string does not match any enum variant.
+    ///
     /// # Example
     /// ```rust
     /// pub use derive_deftly::{define_derive_deftly, Deftly};
@@ -79,6 +93,8 @@ define_derive_deftly! {
 
 define_derive_deftly! {
     /// The enum values must be consecutive integers starting from 0.
+    /// # Errors
+    /// Returns `pt_err::VariantError::UnfoundError` if the index does not match any enum variant.
     /// # Example
     /// ```rust
     /// pub use derive_deftly::{define_derive_deftly, Deftly};
@@ -119,6 +135,7 @@ define_derive_deftly! {
     ///             }
     ///         }
     ///     }
+    ///     // Else funtions....
     /// }
     ///
     ///
