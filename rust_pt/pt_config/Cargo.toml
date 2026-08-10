@@ -13,7 +13,7 @@ derive-deftly = { workspace = true }
 # All errors
 pt_err = { path = "../pt_err" }
 # logs
-# TODO: We should implement pt_tracing before doing pt_core or complex pt_config
 pt_tracing = { path = "../pt_tracing" }
 once_cell = { workspace = true }
 dotenv = { workspace = true }
+url = { workspace = true }
