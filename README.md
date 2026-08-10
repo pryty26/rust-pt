@@ -1,6 +1,23 @@
-# reality-pt
+## rust-pt
 
-# quick start
+## Description
+A Rust-based framework for Tor Pluggable Transports, designed for Rust developers. All transport implementations using this framework are modularized under rust-pt/transports/*
+It's pretty surprising that rust-nased PT actually doesn't have any other framework besides this.
+
+Before reading this project, you may like to read the pt.spec of the Tor [https://spec.torproject.org/pt-spec/index.html]
+
+### Contributors and acknowledgment
+
+## quick start
+Note(pryty26): 
+(*/ω＼*)
+If you are user,
+you may not be suitable to this project, because this project is intended for developers building PT implementations.
+But you may like to download the Tor Browser [https://www.torproject.org/download/]?
+
+## If you would like to contribute (Thanks!ヾ(*≧▽≦*)o)
+# To get started, clone the project and dive in!
+# Remember replace $your_username/ with your real username
 ``` git
 git clone https://gitlab.torproject.org/pryty26/rust-pt.git
 cd rust-pt
@@ -9,13 +26,69 @@ git remote add origin https://gitlab.torproject.org/$your_username/rust-pt.git
 git branch -M main
 git push -uf origin main
 ```
+After that, you would like to have a look into the CONTRIBUTE.md
+there have more detailed informations.
 
-## Description
-A Rust-based framework for Rust-developed Tor Pluggable Transports projects. All transport implementations using this framework are modularized under rust-pt/transports/*
+## If you would like to use this library
+You can have a look into the .\rust-pt\transports,
+since there should have all the transports which is developed with this framework.
+
+Also, docs in docs.rs could be usefull too.
+
+TODO: Add example/*
+
+## Contributors
+(If this is your first time developing here, you can add your name below :)
+(We hope we can make contributors feel friendly and safe (•ω•)/)
+(We value contributors more than codes. Please always feel free to contribute)
+\(・ω・)/
+1. pryty26
+
+
+# *╰(°▽°)╯*
 So far, it's not a very polished project and this is not meant to make any money. But watch this space! Just for fun, for freedom, for an open-source and privacy internet!
 F*ck censorship and human rights violations!
 Let's no more counting dollars we would be counting stars.
 Seek that fun and ye shall find!
+
+## Universal Declaration of Human Rights (Article 19)
+Everyone has the right to freedom of opinion and expression;
+this right includes freedom to hold opinions without interference,
+and to seek, receive and impart information and ideas through any media and regardless of frontiers.
+
+**Human rights always take priority over domestic law and assertions of national sovereignty.**
+**We would not like to ask for permission, we write codes.**
+**Try to act only according to that maxim which you would like all rational beings to agree to**
+
+
+## License
+Idk...
+
+## Project status
+Developing! (I would like to make a mvp before my school starts...(2026/8/12))
+
+/*
+TODO: 
+1 pt_err add InvallidConfigErr, consider maybe separate InvallidServerConfigErr??
+rust-pt\rust_pt\pt_err\src\main.rs
+(1. is done!)
+2. 
+Add build_with_check macro using derive-deftly(Which developes by Ian :-) )
+(2. is done! but used try_from instead )
+3. Add deserialize for Common/Server/ClientConfig
+4. Add trait for PT
+*/
+
+
+
+
+
+
+
+
+
+
+
 
 ## Collaborate with your team
 
@@ -64,19 +137,3 @@ You can also document commands to lint the code or run tests. These steps help t
 
 ## Authors and acknowledgment
 1. pryty26
-
-## License
-Idk...
-
-## Project status
-Developing! (I would like to make a mvp before my school starts...(2026/8/12))
-
-/*
-TODO: 
-1 pt_err add InvallidConfigErr, consider maybe separate InvallidServerConfigErr??
-rust-pt\rust_pt\pt_err\src\main.rs
-2. 
-Add build_with_check macro using derive-deftly(Which developes by Ian :-) )
-3. Add deserialize for Common/Server/ClientConfig
-4. Add trait for PT
-*/
