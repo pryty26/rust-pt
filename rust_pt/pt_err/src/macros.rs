@@ -1,5 +1,3 @@
-#![allow(missing_docs)]
-///! TODO: We should add documents, but we have else thing which is need to do
 use derive_deftly::define_derive_deftly;
 
 define_derive_deftly! {
@@ -26,6 +24,12 @@ define_derive_deftly! {
     ///     Ok(())
     /// }
     /// ```
+    /// Would derive:
+    /// pub enum Ex2ConfigError {
+    ///     ConfigError { message: String },
+    ///     InvalidA { message: String },
+    ///     AUnfound { message: String },
+    /// }
     export DefineVariantError:
     ${if is_enum {
         /// Errors which could cause during the Config parsing.
