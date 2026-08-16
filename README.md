@@ -39,11 +39,15 @@ Also, docs in docs.rs could be usefull too.
 TODO: Add example/*
 
 ## Contributors
-(If this is your first time developing here, you can add your name below :)
+(If this is your first time developing here, you can add your name below. :)
+(Additionally, add your experience e.g, if you have written code for Nasa or FBI(?) you can acknowledge it)
 (We hope we can make contributors feel friendly and safe (•ω•)/)
 (We value contributors more than codes. Please always feel free to contribute)
+Oo(〃＾▽＾〃)oO
 \(・ω・)/
-1. pryty26
+1. pryty26 
+(pryty017@proton.me Also (code merged) Contributor of rustls and Arti/Tor have won some small CTFs)
+
 
 
 # *╰(°▽°)╯*
@@ -77,6 +81,7 @@ rust-pt\rust_pt\pt_err\src\main.rs
 Add build_with_check macro using derive-deftly(Which developes by Ian :-) )
 (2. is done! but used try_from instead )
 3. Add deserialize for Common/Server/ClientConfig
+(3. is done!)
 4. Add trait for PT
 */
 
@@ -138,3 +143,31 @@ You can also document commands to lint the code or run tests. These steps help t
 
 ## Authors and acknowledgment
 1. pryty26
+
+
+
+
+
+
+
+
+
+
+
+
+
+### Where this project came:
+pryty26
+Hi sir
+Mon, Jul 27, 2026
+meskio joined the room
+pryty26
+I have a question about PT development
+meskio
+I'm going AFK now for a bit, but leave it here and I'll try to answer when I'm back
+pryty26
+I'm going to try to develop a Reality-PT using Rust. I was wondering if there's already a PT written in Rust that I could look at and draw on. Also, I'd like to know when and how I should share my code for review, if needed.
+Additionally, could my code live in the tpo/core/anti-censorship repo?
+meskio:
+yes, there is a PTs written in rust, I did linked it in an email I replied to you, maybe you didn't received it: https://lists.torproject.org/mailman3/hyperkitty/list/tor-dev@lists.torproject.org/thread/HDZA3XMVUOQHLSZBYZRQZQHEO572F5KJ/
+on the code hosting, let's start with you selfhosting it, once you have something working we'll review it and discuss where to host it
