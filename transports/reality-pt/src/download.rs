@@ -1,9 +1,10 @@
 pub use crate::variable::XRAY_FILE_NAME;
 use anyhow::Result;
-use std::env::set_current_dir;
+// use std::env::set_current_dir;
+use std::fs;
+use std::fs::File;
 use std::path::PathBuf;
 use std::process::Command;
-use std::{fs, fs::File};
 use zip::ZipArchive;
 /// unzip the downloaded xray zip file
 fn unzip(file: PathBuf) -> Result<PathBuf> {
@@ -36,7 +37,7 @@ pub fn get_xray() -> Result<()> {
                     output.stderr.iter().map(|&c| c as char).collect::<String>()
                 );
             }
-        }
+        },
         Err(_) => panic!("failed to execute xray"),
     };
     let _file = unzip(PathBuf::from("xray.zip"))?;

@@ -1,3 +1,5 @@
+#![allow(missing_docs)]
+
 // macOS
 #[cfg(all(target_os = "macos", target_arch = "aarch64"))]
 pub const XRAY_FILE_NAME: &'static str = "Xray-macos-arm64-v8a.zip";
