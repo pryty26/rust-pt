@@ -4,3 +4,9 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
+# All errors
+pt_err = { path = "../pt_err" }
+# logs
+pt_tracing = { path = "../pt_tracing" }
+# Configuration parsing
+pt_config = { path = "../pt_config"}

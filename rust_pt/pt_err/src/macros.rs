@@ -7,7 +7,7 @@ define_derive_deftly! {
     /// # Example
     /// ```rust
     /// use std::fmt::Display;
-    /// use thiserror::*; 
+    /// use thiserror::*;
     /// pub use derive_deftly::{define_derive_deftly, Deftly};
     /// pub use pt_err::derive_deftly_template_DefineVariantError;
     /// pub use anyhow::Result;
