@@ -2,7 +2,8 @@
 
 ## Description
 A Rust-based framework for Tor Pluggable Transports, designed for Rust developers. All transport implementations using this framework are modularized under rust-pt/transports/*
-It's pretty surprising that rust-nased PT actually doesn't have any other framework besides this.
+It's pretty surprising that rust-nased PT actually doesn't have any other framework which is still maintaining besides this.
+(ptrs last update is on 2024...So I don't think it would be counted as "still maintaining")
 
 Before reading this project, you may like to read the pt.spec of the Tor [https://spec.torproject.org/pt-spec/index.html]
 
@@ -65,7 +66,7 @@ and to seek, receive and impart information and ideas through any media and rega
 Idk...
 
 ## Project status
-Developing! (I would like to make a mvp before my school starts...(2026/8/12))
+Developing!
 
 /*
 TODO: 
