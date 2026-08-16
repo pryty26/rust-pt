@@ -1,6 +1,6 @@
 ///! For grammar of derive-deftly:
 ///! See: https://docs.rs/derive-deftly/1.11.5/derive_deftly/doc_reference/index.html
-///! TODO:
+///! TODO(rust-pt#1):
 ///! For codes like:
 ///! _ => { return Err(pt_err::VariantError::UnfoundError {
 ///!    message: "".to_string()
@@ -8,6 +8,10 @@
 ///! We could iterate the enum using $vname/$vindex to tell the user
 ///! what kind of String/Index/else would be valid
 ///! But leave it for now, we should open an Issue for that  
+///! ---
+///! TODO(rust-pt#2):
+///! Consider making these macros compatible with structs.
+///! We should use $(if is_struct {...}) and $fname
 use derive_deftly::define_derive_deftly;
 define_derive_deftly! {
     /// Implement to string via iterate the enum
