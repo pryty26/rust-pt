@@ -143,7 +143,7 @@ define_derive_deftly! {
     /// }
     ///
     ///
-    /// TODO: I use $vindex due $v_explicit_discriminant is not stable yet
+    /// TODO(rust-pt#4): I use $vindex due $v_explicit_discriminant is not stable yet
     export FromU8Index for enum:
     impl $ttype {
         fn from_u8_index(v: usize) -> Result<Self, pt_err::VariantError> {
