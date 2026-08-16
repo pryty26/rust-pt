@@ -7,12 +7,8 @@ We welcome new contributors!
 
 Unless you expressly state otherwise,
 any contribution you intentionally submit for inclusion in the work will be fully assigned to us.
-
-<<<<<<< HEAD
 And you confirm you have the right to do that.
 
-=======
->>>>>>> 0cc922383d3320066d739dedc9d1eb723877adfb
 ## Setting up your Development Environment
 
 The following section is **not** an exhaustive guide, and only covers common
