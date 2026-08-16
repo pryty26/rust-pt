@@ -54,6 +54,8 @@ pub mod macros;
 use dotenv::dotenv;
 use once_cell::sync::Lazy;
 use std::env;
+/// variables
+pub mod variable;
 /// Init the .env
 pub static ENV_LOADED: Lazy<()> = Lazy::new(|| {
     let _ = dotenv().ok();
