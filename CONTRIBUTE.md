@@ -8,8 +8,11 @@ We welcome new contributors!
 Unless you expressly state otherwise,
 any contribution you intentionally submit for inclusion in the work will be fully assigned to us.
 
+<<<<<<< HEAD
 And you confirm you have the right to do that.
 
+=======
+>>>>>>> 0cc922383d3320066d739dedc9d1eb723877adfb
 ## Setting up your Development Environment
 
 The following section is **not** an exhaustive guide, and only covers common
@@ -35,12 +38,17 @@ working Git installation to fetch the code.
 
 1. If you are creating a TODO, please always open an Issue for it.
 
+<<<<<<< HEAD
 1.1 Before creating an issue, please check whether an appropriate label exists for it.
 
 2. Please do not use AI to generate the code which you are submitting for inclusion of the work!
    Of course, checking or searching grammar or translating docs is always fine. ('•ω•')
    We anticipate that all contributors are professional programmers who fully understand the code, 
    instead of professional Copy-Paste programmer
+=======
+2. Please do not use AI to generate the code which you are submitting for inclusion of the work!
+   Of course, checking or searching grammar or translating docs is always fine. ('•ω•')
+>>>>>>> 0cc922383d3320066d739dedc9d1eb723877adfb
 
 ## Where are some good places to start hacking?
 
