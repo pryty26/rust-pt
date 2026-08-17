@@ -1,9 +1,9 @@
 #![allow(non_snake_case)]
 use crate::MODE;
 use anyhow::Result;
-pub use derive_deftly::{Deftly};
+use derive_deftly::Deftly;
 use pt_err::ConfigError;
-pub use pt_err::derive_deftly_template_DefineVariantError;
+use pt_err::derive_deftly_template_DefineVariantError;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::convert::TryFrom;
@@ -14,7 +14,7 @@ use url::Url;
 /// PTs SHOULD ignore PT names that it does not recognize.
 /// So using String is acceptable, since we won't validate it.
 type PtTransportName = String;
-
+use crate::variable::SCHEMES;
 ///! Currently the most of the Errors are ConfigError::InvalidConfigErr{...}
 ///! TODO: Maybe Adding some diffrent Error would be better?
 ///! But I think developing more feature is more important now.
@@ -23,7 +23,6 @@ type PtTransportName = String;
 /// #[allow(unused)] is fine in this situation,
 /// since this is only to validate the config
 #[derive(Debug, Deserialize)]
-#[allow(unused)]
 pub(crate) struct RawCommonKey {
     TOR_PT_MANAGED_TRANSPORT_VER: Vec<String>,
     TOR_PT_STATE_LOCATION: PathBuf,
@@ -121,9 +120,32 @@ impl TryFrom<RawCommonKey> for CommonKey {
     }
 }
 
+#[derive(Debug, Deserialize)]
+pub(crate) struct RawClientKey {
+    pub(crate) TOR_PT_CLIENT_TRANSPORTS: Vec<PtTransportName>,
+    pub(crate) TOR_PT_PROXY: Option<Url>,
+}
+
+impl TryFrom<RawClientKey> for ClientKey {
+    type Error = ClientKeyConfigError;
+    fn try_from(value: RawClientKey) -> Result<Self, Self::Error> {
+        if let Some(url) = value.TOR_PT_PROXY {
+            validate_proxy_url(&url)?;
+            return Ok(ClientKey {
+                TOR_PT_CLIENT_TRANSPORTS: value.TOR_PT_CLIENT_TRANSPORTS,
+                TOR_PT_PROXY: Some(url),
+            });
+        }
+        Ok(ClientKey {
+            TOR_PT_CLIENT_TRANSPORTS: value.TOR_PT_CLIENT_TRANSPORTS,
+            TOR_PT_PROXY: None,
+        })
+    }
+}
 /// Settings which is needed at client side
 #[derive(Debug, Serialize, Deserialize, Deftly)]
 #[derive_deftly(DefineVariantError)]
+#[serde(try_from = "RawClientKey")]
 pub struct ClientKey {
     /// Specifies the PT protocols the client proxy should initialize, as a comma separated list of PT names.
     ///
@@ -144,6 +166,129 @@ pub struct ClientKey {
     /// Example
     /// TOR_PT_PROXY=socks5://user:pass@192.168.1.1:1080
     pub TOR_PT_PROXY: Option<Url>,
+}
+
+/// Validate a proxy Url
+#[allow(clippy::collapsible_if)]
+pub fn validate_proxy_url(spec: &Url) -> Result<(), ClientKeyConfigError> {
+    if !SCHEMES.contains(&spec.scheme()) {
+        return Err(ClientKeyConfigError::InvalidTOR_PT_PROXY {
+            message: format!(
+                "proxy URI has invalid scheme: {0} \n You should use: {1}",
+                spec.scheme(),
+                SCHEMES.join(", ")
+            ),
+        });
+    }
+
+    // when spec = http the path defaults to "/" instead of empty -_-
+    if !spec.path().is_empty() {
+        if !(spec.scheme() == "http" && spec.path() == "/") {
+            return Err(ClientKeyConfigError::InvalidTOR_PT_PROXY {
+                message: "proxy URI has a path defined ".to_string(),
+            });
+        }
+    }
+    if spec.query().is_some() {
+        if !spec.query().unwrap().is_empty() {
+            return Err(ClientKeyConfigError::InvalidTOR_PT_PROXY {
+                message: "proxy URI has a query defined".to_string(),
+            });
+        }
+    }
+    if spec.fragment().is_some() {
+        if !spec.fragment().unwrap().is_empty() {
+            return Err(ClientKeyConfigError::InvalidTOR_PT_PROXY {
+                message: "proxy URI has a fragment defined".to_string(),
+            });
+        }
+    }
+    if spec.port().is_none() {
+        return Err(ClientKeyConfigError::InvalidTOR_PT_PROXY {
+            message: "proxy URI lacks a port".to_string(),
+        });
+    }
+
+    match spec.scheme() {
+        "socks5" => {
+            let username = spec.username();
+            let passwd = spec.password();
+
+            // if either password or username is specified, then both must be non-empty
+            if !username.is_empty() || passwd.is_some() {
+                if username.is_empty() || username.len() > 255 {
+                    return Err(ClientKeyConfigError::InvalidTOR_PT_PROXY {
+                        message: "proxy URI specified a invalid SOCKS5 username".to_string(),
+                    });
+                }
+                if passwd.is_none() {
+                    return Err(ClientKeyConfigError::InvalidTOR_PT_PROXY {
+                        message: "proxy URI specified a invalid SOCKS5 password".to_string(),
+                    });
+                } else if let Some(p) = passwd {
+                    if p.is_empty() || p.len() > 255 {
+                        return Err(ClientKeyConfigError::InvalidTOR_PT_PROXY {
+                            message: "proxy URI specified a invalid SOCKS5 password".to_string(),
+                        });
+                    }
+                }
+            }
+        },
+        "socks4a" => {
+            if spec.password().is_some() {
+                return Err(ClientKeyConfigError::InvalidTOR_PT_PROXY {
+                    message: "proxy URI specified SOCKS4a and a password".to_string(),
+                });
+            }
+        },
+        "http" => {},
+        _ => {
+            return Err(ClientKeyConfigError::InvalidTOR_PT_PROXY {
+                message: format!("proxy URI has invalid scheme: {}", spec.scheme()),
+            });
+        },
+    }
+
+    if spec.host_str().is_none() {
+        return Err(ClientKeyConfigError::InvalidTOR_PT_PROXY {
+            message: "proxy URI has missing host".to_string(),
+        });
+    }
+
+    // not sure how better to combine host port.
+    let mut sockaddr_string = String::from(spec.host_str().unwrap());
+    sockaddr_string.push(':');
+    sockaddr_string.push_str(&format!("{}", spec.port().unwrap()));
+    let _ =
+        resolve_addr(&sockaddr_string).map_err(|e| ClientKeyConfigError::InvalidTOR_PT_PROXY {
+            message: format!("proxy URI has invalid host: {e}"),
+        })?;
+
+    Ok(())
+}
+
+/// return a Valid Socket Address
+pub fn resolve_addr(addr: &str) -> Result<SocketAddr, ClientKeyConfigError> {
+    let a = addr.as_ref();
+    match SocketAddr::from_str(a) {
+        Ok(sock_addr) => {
+            if sock_addr.ip().is_unspecified() {
+                return Err(ClientKeyConfigError::InvalidTOR_PT_PROXY {
+                    message: format!("address string {a} lacks a host"),
+                });
+            }
+
+            if sock_addr.port() == 0 {
+                return Err(ClientKeyConfigError::InvalidTOR_PT_PROXY {
+                    message: format!("address string {a} lacks a port"),
+                });
+            }
+            Ok(sock_addr)
+        },
+        Err(e) => Err(ClientKeyConfigError::InvalidTOR_PT_PROXY {
+            message: format!("\"{a}\" - {e}"),
+        }),
+    }
 }
 
 /// Specifies per-PT protocol configuration directives,
@@ -236,10 +381,12 @@ impl TryFrom<RawServerKey> for ServerKey {
         // obfs3-198.51.100.1:1984,scramblesuit-127.0.0.1:4891
         let TOR_PT_SERVER_BINDADDR: Vec<HashMap<PtTransportName, SocketAddr>> = raw
             .TOR_PT_SERVER_BINDADDR
-            .split(',')// ["obfs3-198.51.100.1:1984", "scramblesuit-127.0.0.1:4891"]
+            .split(',') // ["obfs3-198.51.100.1:1984", "scramblesuit-127.0.0.1:4891"]
             .filter_map(|x| x.split_once('-')) // ["obfs3", "198.51.100.1:1984"]
             .map(|(name, bind_addr)| {
-                let addr = bind_addr.parse::<SocketAddr>().expect("Invalid TOR_PT_SERVER_BINDADDR");
+                let addr = bind_addr
+                    .parse::<SocketAddr>()
+                    .expect("Invalid TOR_PT_SERVER_BINDADDR");
                 HashMap::from([(name.to_string(), addr)])
             })
             .collect();
