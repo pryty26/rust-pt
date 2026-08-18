@@ -39,13 +39,7 @@ We try to follow the pt-spec.txt
 
 1.1.2 core.rs
 
-here we have the most important public functions
-
-```rust
-pub fn pt_config_init(...) {...}
-```
-
-it uses envy to deserialize 
+We are going to implicate a function which uses envy to deserialize 
 
 ServerKey
 And
