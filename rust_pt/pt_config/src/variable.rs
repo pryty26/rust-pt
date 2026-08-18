@@ -12,3 +12,6 @@ pub const AUTH_COOKIE_FILE: &str = "TOR_PT_AUTH_COOKIE_FILE";
 pub const ORPORT: &str = "TOR_PT_ORPORT";
 pub const EXTENDED_SERVER_PORT: &str = "TOR_PT_EXTENDED_SERVER_PORT";
 pub const EXIT_ON_STDIN_CLOSE: &str = "TOR_PT_EXIT_ON_STDIN_CLOSE";
+
+/// Proxies which are supported
+pub const SCHEMES: [&str; 3] = ["socks5", "socks4a", "http"];

@@ -24,13 +24,21 @@ use crate::variable::SCHEMES;
 /// since this is only to validate the config
 #[derive(Debug, Deserialize)]
 pub(crate) struct RawCommonKey {
-    TOR_PT_MANAGED_TRANSPORT_VER: Vec<String>,
+    #[serde(rename = "tor_pt_managed_transport_ver")]
+    TOR_PT_MANAGED_TRANSPORT_VER: String,
+
+    #[serde(rename = "tor_pt_state_location")]
     TOR_PT_STATE_LOCATION: PathBuf,
+
+    #[serde(rename = "tor_pt_exit_on_stdin_close")]
     TOR_PT_EXIT_ON_STDIN_CLOSE: i8,
+
+    #[serde(rename = "tor_pt_outbound_bind_address_v4")]
     TOR_PT_OUTBOUND_BIND_ADDRESS_V4: Option<Ipv4Addr>,
+
+    #[serde(rename = "tor_pt_outbound_bind_address_v6")]
     TOR_PT_OUTBOUND_BIND_ADDRESS_V6: Option<Ipv6Addr>,
 }
-
 /// Splits `s` by commas and collects the results into a `Vec<String>`.
 pub fn separate_with(s: String, comma: &str) -> Vec<String> {
     s.split(comma)
@@ -110,8 +118,9 @@ impl TryFrom<RawCommonKey> for CommonKey {
                     message: format!("Invalid TOR_PT_OUTBOUND_BIND_ADDRESS_V6: {}", e),
                 })?,
         };
+        let version = separate_with(raw.TOR_PT_MANAGED_TRANSPORT_VER, ",");
         Ok(CommonKey {
-            TOR_PT_MANAGED_TRANSPORT_VER: raw.TOR_PT_MANAGED_TRANSPORT_VER,
+            TOR_PT_MANAGED_TRANSPORT_VER: version,
             TOR_PT_STATE_LOCATION: raw.TOR_PT_STATE_LOCATION,
             TOR_PT_EXIT_ON_STDIN_CLOSE: raw.TOR_PT_EXIT_ON_STDIN_CLOSE,
             TOR_PT_OUTBOUND_BIND_ADDRESS_V4: TOR_PT_OUTBOUND_BIND_ADDRESS_V4,
@@ -122,7 +131,10 @@ impl TryFrom<RawCommonKey> for CommonKey {
 
 #[derive(Debug, Deserialize)]
 pub(crate) struct RawClientKey {
+    #[serde(rename = "tor_pt_client_transports")]
     pub(crate) TOR_PT_CLIENT_TRANSPORTS: Vec<PtTransportName>,
+
+    #[serde(rename = "tor_pt_proxy")]
     pub(crate) TOR_PT_PROXY: Option<Url>,
 }
 
@@ -310,13 +322,19 @@ pub struct TransportOption {
 pub(crate) struct RawServerKey {
     /// Example:
     /// TOR_PT_SERVER_TRANSPORTS=obfs3,scramblesuit
+    #[serde(rename = "tor_pt_server_transports")]
     pub(crate) TOR_PT_SERVER_TRANSPORTS: Vec<PtTransportName>,
+
     /// Example:
     /// TOR_PT_SERVER_TRANSPORT_OPTIONS=scramblesuit:key=banana;automata:rule=110;automata:depth=3
+    #[serde(rename = "tor_pt_server_transport_options")]
     pub(crate) TOR_PT_SERVER_TRANSPORT_OPTIONS: String,
+
     ///Example:
     /// TOR_PT_SERVER_BINDADDR=obfs3-198.51.100.1:1984,scramblesuit-127.0.0.1:4891
+    #[serde(rename = "tor_pt_server_bindaddr")]
     pub(crate) TOR_PT_SERVER_BINDADDR: String,
+
     /// Specifies the destination that
     /// the PT reverse proxy should forward traffic to after transforming it as appropriate,
     ///  as an <address>:<port>.
@@ -327,12 +345,17 @@ pub(crate) struct RawServerKey {
     ///
     ///  Example:
     /// TOR_PT_ORPORT==127.0.0.1:4200
+    #[serde(rename = "tor_pt_orport")]
     pub(crate) TOR_PT_ORPORT: SocketAddr,
+
     /// Example:
     /// TOR_PT_EXTENDED_SERVER_PORT=127.0.0.1:4200
+    #[serde(rename = "tor_pt_extended_server_port")]
     pub(crate) TOR_PT_EXTENDED_SERVER_PORT: SocketAddr,
+
     /// Example:
     /// TOR_PT_AUTH_COOKIE_FILE=/var/lib/tor/extended_orport_auth_cookie
+    #[serde(rename = "tor_pt_auth_cookie_file")]
     pub(crate) TOR_PT_AUTH_COOKIE_FILE: PathBuf,
 }
 

@@ -43,6 +43,7 @@ TODO: Add example/*
 (Additionally, add your experience e.g, if you have written code for Nasa or FBI(?) you can acknowledge it)
 (We hope we can make contributors feel friendly and safe (•ω•)/)
 (We value contributors more than codes. Please always feel free to contribute)
+(Reviewer must be Friendly! (Unless reviewers are reviewing their own code))
 Oo(〃＾▽＾〃)oO
 \(・ω・)/
 1. pryty26 
