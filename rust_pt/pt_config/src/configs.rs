@@ -1,3 +1,4 @@
-mod configs;
-
-mod parse;
+/// Configs
+pub mod configs;
+/// Core
+pub mod core;

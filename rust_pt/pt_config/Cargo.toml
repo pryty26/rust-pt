@@ -15,6 +15,7 @@ pt_err = { path = "../pt_err" }
 # logs
 pt_tracing = { path = "../pt_tracing" }
 once_cell = { workspace = true }
-dotenv = { workspace = true }
+dotenvy = { workspace = true }
 url = { workspace = true }
 thiserror = { workspace = true}
+envy = {workspace = true}

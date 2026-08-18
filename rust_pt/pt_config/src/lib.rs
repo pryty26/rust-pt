@@ -51,7 +51,7 @@ use derive_deftly::Deftly;
 pub mod configs;
 /// Diffrent macros which could be helpful
 pub mod macros;
-use dotenv::dotenv;
+use dotenvy::dotenv;
 use once_cell::sync::Lazy;
 use std::env;
 /// variables
