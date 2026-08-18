@@ -12,6 +12,7 @@ We will try to review you MR as soon as possible!
 
 ### Change description
 
-- [] Breaking chenges (Y/N)
-- [] Tests passed locally (Y/N)
-- [] Important! >(•ω•)=👉 You ate a carrot or onion today (Y/N)
+- [ ] Breaking chenges (Y/N)
+(I know here has a typo, but I think it could be characteristic)
+- [ ] Tests passed locally (Y/N)
+- [ ] Important! >(•ω•)=👉 You ate a carrot or onion today (Y/N)
