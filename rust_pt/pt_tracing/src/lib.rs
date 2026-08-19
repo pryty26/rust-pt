@@ -35,8 +35,6 @@
 #![deny(clippy::large_stack_arrays)]
 #![deny(clippy::missing_docs_in_private_items)]
 #![deny(clippy::mod_module_files)]
-#![deny(clippy::print_stderr)]
-#![deny(clippy::print_stdout)]
 #![deny(clippy::ref_option_ref)]
 #![deny(clippy::string_slice)] // See arti#2571
 #![deny(clippy::unchecked_time_subtraction)]
@@ -44,11 +42,14 @@
 #![deny(clippy::unused_async)]
 #![deny(clippy::unwrap_used)]
 //! <!-- @@ end lint list
+#![allow(clippy::print_stderr)]
+#![allow(clippy::print_stdout)]
 //! For detailed information, see [the spec] https://spec.torproject.org/pt-spec/ipc.html
 use anyhow::Result;
 use tracing::level_filters::LevelFilter;
 use tracing::{debug, error, info, warn};
 use tracing_subscriber::{self};
+
 /// The SEVERITY value indicate at which logging level the message applies.
 /// The accepted values for <Severity> are: error, warning, notice, info, debug
 #[repr(u8)]
@@ -65,10 +66,6 @@ pub enum SEVERITY {
     /// Sets the log level to **ERROR**, displaying all messages with a severity of **ERROR** or higher.
     ERROR = 5,
 }
-
-/// Messages needed in Pt
-/// TODO: do that bro!
-pub enum PtMessages {}
 
 impl From<SEVERITY> for LevelFilter {
     fn from(severity: SEVERITY) -> Self {
@@ -139,6 +136,7 @@ impl PtTracing {
     }
 
     /// Print a notice message, conform with Tor-Pt Spec
+    /// Unfortunately tracing do not have "notice" level. So we need to use manual if+println! instead.
     pub fn notice(&self, message: String) -> Result<()> {
         if self.severity as usize > 2 {
             println!("LOG SEVERITY=notice MESSAGE={}", message);
@@ -150,6 +148,168 @@ impl PtTracing {
     pub fn warn(&self, message: String) -> Result<()> {
         warn!("LOG SEVERITY=warning MESSAGE={}", message);
         Ok(())
+    }
+    /// After version negotiation has been completed, the PT proxy must then
+    /// validate that all of the required environment variables are provided,
+    /// and that all of the configuration values supplied are well formed.
+    ///
+    /// At any point, if there is an error encountered related to configuration
+    /// supplied via the environment variables, it MAY respond with an error
+    /// message and terminate.
+    ///
+    /// `ENV-ERROR <ErrorMessage>`
+    ///
+    /// The “ENV-ERROR” message is used to signal the PT proxy’s failure to parse
+    /// the configuration environment variables (3.2).
+    ///
+    /// The `<ErrorMessage>` SHOULD consist of a useful error message that can be
+    /// used to diagnose and correct the root cause of the failure.
+    ///
+    /// PT proxies MUST terminate after outputting a “ENV-ERROR” message.
+    ///
+    /// Example:
+    ///
+    /// `ENV-ERROR No TOR_PT_AUTH_COOKIE_FILE when TOR_PT_EXTENDED_SERVER_PORT set`
+    pub fn env_error(&self, msg: &str) {
+        println!("ENV-ERROR {}", msg);
+    }
+    /// When a PT proxy first starts up, it must determine which version of the
+    /// Pluggable Transports Specification to use to configure itself.
+    ///
+    /// It does this via the `TOR_PT_MANAGED_TRANSPORT_VER` (3.2.1) environment
+    /// variable which contains all of the versions supported by the application.
+    ///
+    /// Upon determining the version to use, or lack thereof, the PT proxy
+    /// responds with one of two messages.
+    ///
+    /// `VERSION-ERROR <ErrorMessage>`
+    ///
+    /// The “VERSION-ERROR” message is used to signal that there was no compatible
+    /// Pluggable Transport Specification version present in the
+    /// `TOR_PT_MANAGED_TRANSPORT_VER` list.
+    ///
+    /// The `<ErrorMessage>` SHOULD be set to “no-version” for historical reasons
+    /// but MAY be set to a useful error message instead.
+    ///
+    /// PT proxies MUST terminate after outputting a “VERSION-ERROR” message.
+    pub fn version_error(&self, msg: &str) {
+        println!("VERSION-ERROR {}", &msg)
+    }
+    /// After negotiating the Pluggable Transport Specification version, PT client
+    /// proxies MUST first validate `TOR_PT_PROXY` (3.2.2) if it is set, before
+    /// initializing any transports.
+    ///
+    /// Assuming that an upstream proxy is provided, PT client proxies MUST
+    /// respond with a message indicating that the proxy is valid, supported, and
+    /// will be used OR a failure message.
+    pub fn proxy_done(&self) {
+        println!("PROXY DONE")
+    }
+    /// The `VERSION` message is used to signal the Pluggable Transport
+    /// Specification version that the PT proxy will use to configure its
+    /// transports and communicate with the parent process.
+    ///
+    /// The version for the environment values and reply messages specified
+    /// by the PT Specification is `1`.
+    ///
+    /// PT proxies MUST either report an error and terminate, or output a
+    /// `VERSION` message before moving on to client/server proxy initialization
+    /// and configuration.
+    ///
+    /// Example:
+    ///
+    /// `VERSION 1`
+    pub fn version(&self, version: &str) {
+        println!("VERSION {}", version);
+    }
+
+    /// The `PROXY-ERROR` message is used to signal that the upstream proxy
+    /// specified by `TOR_PT_PROXY` is malformed, unsupported, or otherwise
+    /// unusable.
+    ///
+    /// PT proxies MUST terminate immediately after outputting a
+    /// `PROXY-ERROR` message.
+    ///
+    /// Example:
+    ///
+    /// `PROXY-ERROR SOCKS 4 upstream proxies unsupported.`
+    pub fn proxy_error(&self, msg: &str) {
+        println!("PROXY-ERROR {}", msg);
+    }
+
+    /// The `CMETHOD` message is used to signal that a requested PT transport
+    /// has been launched, the protocol which the parent should use to make
+    /// outgoing connections, and the IP address and port that the PT transport
+    /// is listening on.
+    ///
+    /// The protocol MUST be either `socks4` or `socks5`.
+    ///
+    /// Example:
+    ///
+    /// `CMETHOD trebuchet socks5 127.0.0.1:19999`
+    pub fn cmethod(&self, transport: &str, proxy_type: &str, address: &str) {
+        println!("CMETHOD {} {} {}", transport, proxy_type, address);
+    }
+
+    /// The `CMETHOD-ERROR` message is used to signal that a requested PT
+    /// transport was unable to be launched.
+    ///
+    /// Example:
+    ///
+    /// `CMETHOD-ERROR trebuchet no rocks available`
+    pub fn cmethod_error(&self, transport: &str, msg: &str) {
+        println!("CMETHOD-ERROR {} {}", transport, msg);
+    }
+
+    /// The `CMETHODS DONE` message signals that the PT proxy has finished
+    /// initializing all of the transports that it is capable of handling.
+    ///
+    /// Upon sending the `CMETHODS DONE` message, the PT proxy initialization
+    /// is complete.
+    pub fn cmethods_done(&self) {
+        println!("CMETHODS DONE");
+    }
+
+    /// The `SMETHOD` message is used to signal that a requested PT transport
+    /// has been launched, the protocol which will be used to handle incoming
+    /// connections, and the IP address and port that clients should use to
+    /// reach the reverse proxy.
+    ///
+    /// The optional `options` field is used to pass additional per-transport
+    /// information back to the parent process.
+    ///
+    /// Example:
+    ///
+    /// `SMETHOD trebuchet 198.51.100.1:19999`
+    ///
+    /// `SMETHOD rot_by_N 198.51.100.1:2323 ARGS:N=13`
+    pub fn smethod(&self, transport: &str, address: &str, options: Option<&str>) {
+        match options {
+            Some(options) => {
+                println!("SMETHOD {} {} {}", transport, address, options);
+            },
+            None => {
+                println!("SMETHOD {} {}", transport, address);
+            },
+        }
+    }
+
+    /// The `SMETHOD-ERROR` message is used to signal that a requested PT
+    /// transport reverse proxy was unable to be launched.
+    ///
+    /// Example:
+    ///
+    /// `SMETHOD-ERROR trebuchet no cows available`
+    pub fn smethod_error(&self, transport: &str, msg: &str) {
+        println!("SMETHOD-ERROR {} {}", transport, msg);
+    }
+    /// The `SMETHODS DONE` message signals that the PT proxy has finished
+    /// initializing all of the transports that it is capable of handling.
+    ///
+    /// Upon sending the `SMETHODS DONE` message, the PT proxy initialization
+    /// is complete.
+    pub fn smethods_done(&self) {
+        println!("SMETHODS DONE");
     }
 }
 
@@ -171,6 +331,7 @@ mod test {
     //! <!-- @@ end test lint list maintained by maint/add_warning @@ -->
     #![allow(unused)]
     use super::*;
+    ///! wkwkwk I just copy-pasted pt-spec
 
     #[test]
     fn test_something() {
