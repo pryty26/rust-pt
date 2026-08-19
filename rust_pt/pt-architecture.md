@@ -88,5 +88,51 @@ Note(pryty26): The enum values must be consecutive integers starting from 0.
 
 Defines some variable
 
+4. 
+📦pt_tracing
+ ┣ 📂src
+ ┃ ┗ 📜lib.rs
+ ┗ 📜Cargo.toml
+
+4.1 This is much simpler crate, because we do not need to do very much thing on here
+
+There is only one main structure:
+
+```rust 
+/// Config of pt_tracing,
+/// user could change it via different function
+pub struct PtTracing {
+    /// The SEVERITY value indicate at which logging level the message applies.
+    /// The accepted values for <Severity> are: error, warning, notice, info, debug
+    pub severity: SEVERITY,
+}
+```
+
+But FWIW, I think looking to my code or pt-spec.txt is best way to learn it...
+
+4.2 Useful functions:
+
+For initing(Yes I indeed copy-pasted docs test codes):
+```rust
+use pt_tracing::{PtTracing, SEVERITY};
+
+fn main() -> anyhow::Result<()> {
+    // Available severity levels:
+    // DEBUG, INFO, NOTICE, WARNING, ERROR
+    // let level = SEVERITY::INFO; // Or else
+    let level = SEVERITY::NOTICE;
+    // Or:
+    // let pt_tracing = PtTracing::default_init()?;
+    let pt_tracing = PtTracing::new(level).init()?;
+    // Yes I used Result in every DEBUG, INFO, NOTICE, WARNING, ERROR function
+    pt_tracing.debug("cool debug message")?;
+    pt_tracing.info("cool info message")?;
+    // And so on
+    Ok(())
+}
+```
+
+Also, for detailed information, I believe you must read pt-spec.txt
+Spec is always best docs. 🤪
 
 TODO(rust_pt#5): add more docs about architecture

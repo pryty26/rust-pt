@@ -80,8 +80,30 @@ impl From<SEVERITY> for LevelFilter {
     }
 }
 
-/// Config of pt_tracing,
-/// user could change it via different function
+/// Configuration for pt_tracing.
+///
+/// Users can customize the logging behavior via different functions.
+///
+/// # Example
+///
+/// ```rust
+/// use pt_tracing::{PtTracing, SEVERITY};
+///
+/// fn main() -> anyhow::Result<()> {
+///     // Available severity levels:
+///     // DEBUG, INFO, NOTICE, WARNING, ERROR
+///     // let level = SEVERITY::INFO; // Or else
+///     let level = SEVERITY::NOTICE;
+///     // Or:
+///     // let pt_tracing = PtTracing::default_init()?;
+///     let pt_tracing = PtTracing::new(level).init()?;
+///     // Yes I used Result in every DEBUG, INFO, NOTICE, WARNING, ERROR function
+///     pt_tracing.debug("cool debug message")?;
+///     pt_tracing.info("cool info message")?;
+///     // And so on
+///     Ok(())
+/// }
+/// ```
 pub struct PtTracing {
     /// The SEVERITY value indicate at which logging level the message applies.
     /// The accepted values for <Severity> are: error, warning, notice, info, debug
@@ -90,7 +112,7 @@ pub struct PtTracing {
 impl PtTracing {
     /// init the config with PtTracingConfig
     /// TODO: add more flexible configuration
-    pub fn init(&self) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+    pub fn init(&self) -> Result<()> {
         tracing_subscriber::fmt()
             .with_max_level(self.severity)
             .compact()
@@ -102,7 +124,8 @@ impl PtTracing {
             .with_line_number(false)
             .with_ansi(false)
             .without_time()
-            .try_init()?;
+            .try_init()
+            .map_err(|e| anyhow::anyhow!(e))?;
         Ok(())
     }
     /// Return a new PtTracingConfig
@@ -114,30 +137,30 @@ impl PtTracing {
         PtTracing::new(SEVERITY::NOTICE)
     }
     /// Init a default tracing_subscriber
-    pub fn default_init() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+    pub fn default_init() -> Result<()> {
         Self::default_config().init()?;
         Ok(())
     }
     /// Print a debug message, conform with Tor-Pt Spec
-    pub fn debug(&self, message: String) -> Result<()> {
+    pub fn debug(&self, message: &str) -> Result<()> {
         debug!("LOG SEVERITY=debug MESSAGE={}", message);
         Ok(())
     }
     /// Print an info message, conform with Tor-Pt Spec
-    pub fn info(&self, message: String) -> Result<()> {
+    pub fn info(&self, message: &str) -> Result<()> {
         info!("LOG SEVERITY=info MESSAGE={}", message);
         Ok(())
     }
 
     /// Print an error message, conform with Tor-Pt Spec
-    pub fn error(&self, message: String) -> Result<()> {
+    pub fn error(&self, message: &str) -> Result<()> {
         error!("LOG SEVERITY=error MESSAGE={}", message);
         Ok(())
     }
 
     /// Print a notice message, conform with Tor-Pt Spec
     /// Unfortunately tracing do not have "notice" level. So we need to use manual if+println! instead.
-    pub fn notice(&self, message: String) -> Result<()> {
+    pub fn notice(&self, message: &str) -> Result<()> {
         if self.severity as usize > 2 {
             println!("LOG SEVERITY=notice MESSAGE={}", message);
         }
@@ -145,7 +168,7 @@ impl PtTracing {
     }
 
     /// Print a warning message, conform with Tor-Pt Spec
-    pub fn warn(&self, message: String) -> Result<()> {
+    pub fn warn(&self, message: &str) -> Result<()> {
         warn!("LOG SEVERITY=warning MESSAGE={}", message);
         Ok(())
     }
@@ -331,10 +354,12 @@ mod test {
     //! <!-- @@ end test lint list maintained by maint/add_warning @@ -->
     #![allow(unused)]
     use super::*;
+    /*
     ///! wkwkwk I just copy-pasted pt-spec
 
     #[test]
     fn test_something() {
         todo!("remember add some test wkwkwkwwk");
     }
+    */
 }
