@@ -54,6 +54,7 @@ use tracing_subscriber::{self};
 /// The accepted values for <Severity> are: error, warning, notice, info, debug
 #[repr(u8)]
 #[derive(Clone, Copy)]
+#[non_exhaustive]
 pub enum SEVERITY {
     /// Sets the log level to **DEBUG**, displaying all messages with a severity of **DEBUG** or higher.
     DEBUG = 1,
@@ -90,13 +91,18 @@ impl From<SEVERITY> for LevelFilter {
 /// use pt_tracing::{PtTracing, SEVERITY};
 ///
 /// fn main() -> anyhow::Result<()> {
-///     // Available severity levels:
-///     // DEBUG, INFO, NOTICE, WARNING, ERROR
-///     // let level = SEVERITY::INFO; // Or else
+///    // Examples of avaiable value in 2026/8/21
+///    let (_debug, _info, _notice, _warning, _error) = (
+///         SEVERITY::DEBUG,
+///         SEVERITY::INFO,
+///         SEVERITY::NOTICE,
+///         SEVERITY::WARNING,
+///         SEVERITY::ERROR,
+///     );
 ///     let level = SEVERITY::NOTICE;
 ///     // Or:
-///     // let pt_tracing = PtTracing::default_init()?;
-///     let pt_tracing = PtTracing::new(level).init()?;
+///     let pt_tracing = PtTracing::new(level);
+///     pt_tracing.init()?;
 ///     // Yes I used Result in every DEBUG, INFO, NOTICE, WARNING, ERROR function
 ///     pt_tracing.debug("cool debug message")?;
 ///     pt_tracing.info("cool info message")?;
@@ -133,13 +139,9 @@ impl PtTracing {
         PtTracing { severity: severity }
     }
     /// Return a default PtTracingConfig
+    /// Set SEVERITY as NOTICE
     pub fn default_config() -> Self {
         PtTracing::new(SEVERITY::NOTICE)
-    }
-    /// Init a default tracing_subscriber
-    pub fn default_init() -> Result<()> {
-        Self::default_config().init()?;
-        Ok(())
     }
     /// Print a debug message, conform with Tor-Pt Spec
     pub fn debug(&self, message: &str) -> Result<()> {
@@ -161,8 +163,14 @@ impl PtTracing {
     /// Print a notice message, conform with Tor-Pt Spec
     /// Unfortunately tracing do not have "notice" level. So we need to use manual if+println! instead.
     pub fn notice(&self, message: &str) -> Result<()> {
-        if self.severity as usize > 2 {
-            println!("LOG SEVERITY=notice MESSAGE={}", message);
+        // Severity enum values:
+        // Error = 0, Warn = 1, Notice = 2, Info = 3, Debug = 4, Trace = 5
+        // Notice messages should be printed when severity is DEBUG(1)、INFO(2)、NOTICE(3)
+        match self.severity {
+            SEVERITY::DEBUG | SEVERITY::INFO | SEVERITY::NOTICE => {
+                println!("LOG SEVERITY=notice MESSAGE={}", message);
+            },
+            SEVERITY::WARNING | SEVERITY::ERROR => {},
         }
         Ok(())
     }
@@ -354,12 +362,32 @@ mod test {
     //! <!-- @@ end test lint list maintained by maint/add_warning @@ -->
     #![allow(unused)]
     use super::*;
-    /*
-    ///! wkwkwk I just copy-pasted pt-spec
 
-    #[test]
-    fn test_something() {
-        todo!("remember add some test wkwkwkwwk");
+    ///! wkwkwk I just copy-pasted pt-spec
+    impl PtTracing {
+        /// Print a notice message, conform with Tor-Pt Spec
+        /// Unfortunately tracing do not have "notice" level. So we need to use manual if+println! instead.
+        /// This is only for test
+        pub fn notice_for_test(&self, message: &str) -> Result<()> {
+            // Severity enum values:
+            // Error = 0, Warn = 1, Notice = 2, Info = 3, Debug = 4, Trace = 5
+            // Notice messages should be printed when severity is DEBUG(1)、INFO(2)、NOTICE(3)
+            match self.severity {
+                SEVERITY::DEBUG | SEVERITY::INFO | SEVERITY::NOTICE => {
+                    println!("LOG SEVERITY=notice MESSAGE={}", message);
+                },
+                SEVERITY::WARNING | SEVERITY::ERROR => {
+                    anyhow::bail!("error!");
+                },
+            }
+            Ok(())
+        }
     }
-    */
+    #[test]
+    fn test_for_notice() -> anyhow::Result<()> {
+        let t: PtTracing = PtTracing::default_config();
+        t.init()?;
+        t.notice("notice").unwrap();
+        Ok(())
+    }
 }
