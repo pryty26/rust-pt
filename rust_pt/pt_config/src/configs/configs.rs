@@ -14,7 +14,7 @@ use url::Url;
 /// PTs SHOULD ignore PT names that it does not recognize.
 /// So using String is acceptable, since we won't validate it.
 type PtTransportName = String;
-use crate::variable::SCHEMES;
+use crate::variable::{CURRENT_TRANSPORT_VER, SCHEMES};
 ///! Currently the most of the Errors are ConfigError::InvalidConfigErr{...}
 ///! TODO: Maybe Adding some diffrent Error would be better?
 ///! But I think developing more feature is more important now.
@@ -119,6 +119,11 @@ impl TryFrom<RawCommonKey> for CommonKey {
                 })?,
         };
         let version = separate_with(raw.TOR_PT_MANAGED_TRANSPORT_VER, ",");
+        if !version.iter().any(|v| v == CURRENT_TRANSPORT_VER) {
+            return Err(ConfigError::UnsupportedVer {
+                message: format!("Supported version: {}", CURRENT_TRANSPORT_VER),
+            });
+        }
         Ok(CommonKey {
             TOR_PT_MANAGED_TRANSPORT_VER: version,
             TOR_PT_STATE_LOCATION: raw.TOR_PT_STATE_LOCATION,
