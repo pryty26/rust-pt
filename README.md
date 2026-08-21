@@ -7,6 +7,8 @@ It's pretty surprising that rust-nased PT actually doesn't have any other framew
 
 Before reading this project, you may like to read the pt.spec of the Tor [https://spec.torproject.org/pt-spec/index.html]
 
+[https://codeberg.org/pryty26/rust-pt/]
+[https://gitlab.torproject.org/pryty26/rust-pt]
 ### Contributors and acknowledgment
 
 ## quick start
@@ -19,6 +21,7 @@ But you may like to download the Tor Browser [https://www.torproject.org/downloa
 ## If you would like to contribute (Thanks!ヾ(*≧▽≦*)o)
 # To get started, clone the project and dive in!
 # Remember replace $your_username/ with your real username
+Also, we have a mirror in codeberg [https://codeberg.org/pryty26/rust-pt/]
 ``` git
 git clone https://gitlab.torproject.org/pryty26/rust-pt.git
 cd rust-pt
