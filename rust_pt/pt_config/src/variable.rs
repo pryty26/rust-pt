@@ -1,6 +1,6 @@
 #![allow(missing_docs)]
 
-pub const CURRENT_TRANSPORT_VER: &str = "1";
+pub const CURRENT_TRANSPORT_VER: [&str; 1] = ["1"];
 pub const MANAGED_VER: &str = "TOR_PT_MANAGED_TRANSPORT_VER";
 pub const STATE_LOCATION: &str = "TOR_PT_STATE_LOCATION";
 pub const CLIENT_TRANSPORTS: &str = "TOR_PT_CLIENT_TRANSPORTS";

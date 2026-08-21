@@ -119,9 +119,9 @@ impl TryFrom<RawCommonKey> for CommonKey {
                 })?,
         };
         let version = separate_with(raw.TOR_PT_MANAGED_TRANSPORT_VER, ",");
-        if !version.iter().any(|v| v == CURRENT_TRANSPORT_VER) {
+        if !version.iter().any(|v| CURRENT_TRANSPORT_VER.contains(&v.as_str())) {
             return Err(ConfigError::UnsupportedVer {
-                message: format!("Supported version: {}", CURRENT_TRANSPORT_VER),
+                message: format!("Supported version: {}", CURRENT_TRANSPORT_VER.join(", ")),
             });
         }
         Ok(CommonKey {
