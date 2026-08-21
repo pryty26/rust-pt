@@ -119,7 +119,10 @@ impl TryFrom<RawCommonKey> for CommonKey {
                 })?,
         };
         let version = separate_with(raw.TOR_PT_MANAGED_TRANSPORT_VER, ",");
-        if !version.iter().any(|v| CURRENT_TRANSPORT_VER.contains(&v.as_str())) {
+        if !version
+            .iter()
+            .any(|v| CURRENT_TRANSPORT_VER.contains(&v.as_str()))
+        {
             return Err(ConfigError::UnsupportedVer {
                 message: format!("Supported version: {}", CURRENT_TRANSPORT_VER.join(", ")),
             });
@@ -314,7 +317,7 @@ pub fn resolve_addr(addr: &str) -> Result<SocketAddr, ClientKeyConfigError> {
 /// with options that are to be passed to the transport.
 /// Example:
 /// TOR_PT_SERVER_TRANSPORT_OPTIONS=scramblesuit:key=banana;automata:rule=110;automata:depth=3
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq)]
 pub struct TransportOption {
     /// Corresponding PtTransportName of Settings
     pub name: PtTransportName,
@@ -365,13 +368,19 @@ pub(crate) struct RawServerKey {
 }
 
 /// Many TransportOption
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq)]
 pub struct TransportOptions {
     /// Many TransportOption
     pub options: Vec<TransportOption>,
 }
 impl FromStr for TransportOptions {
     type Err = ConfigError;
+    /// Input: "scramblesuit:key=banana;automata:rule=110;automata:depth=3"
+    /// Output: [
+    ///   TransportOption { name: "scramblesuit", settings: {"key": "banana"} },
+    ///   TransportOption { name: "automata", settings: {"rule": "110"} },
+    ///   TransportOption { name: "automata", settings: {"depth": "3"} },
+    /// ]
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         // scramblesuit:key=banana
         let options = s
@@ -394,6 +403,16 @@ impl FromStr for TransportOptions {
             .collect::<Result<Vec<TransportOption>, ConfigError>>()?;
 
         Ok(TransportOptions { options: options })
+    }
+}
+
+impl TransportOption {
+    /// To generate a TransportOption::settings
+    pub fn generate_settings(pairs: &[(&str, &str)]) -> HashMap<String, String> {
+        pairs
+            .iter()
+            .map(|(k, v)| (k.to_string(), v.to_string()))
+            .collect()
     }
 }
 
@@ -476,4 +495,56 @@ pub struct ServerKey {
     /// Example:
     /// TOR_PT_AUTH_COOKIE_FILE=/var/lib/tor/extended_orport_auth_cookie
     pub TOR_PT_AUTH_COOKIE_FILE: PathBuf,
+}
+
+#[cfg(test)]
+mod test {
+    // @@ begin test lint list maintained by maint/add_warning @@
+    #![allow(clippy::bool_assert_comparison)]
+    #![allow(clippy::clone_on_copy)]
+    #![allow(clippy::dbg_macro)]
+    #![allow(clippy::mixed_attributes_style)]
+    #![allow(clippy::print_stderr)]
+    #![allow(clippy::print_stdout)]
+    #![allow(clippy::single_char_pattern)]
+    #![allow(clippy::unwrap_used)]
+    #![allow(clippy::unchecked_time_subtraction)]
+    #![allow(clippy::useless_vec)]
+    #![allow(clippy::needless_pass_by_value)]
+    #![allow(clippy::string_slice)] // See arti#2571
+    //! <!-- @@ end test lint list maintained by maint/add_warning @@ -->
+    #![allow(unused)]
+    use super::*;
+
+    /// Input: "scramblesuit:key=banana;automata:rule=110;automata:depth=3"
+    /// Output: [
+    ///   TransportOption { name: "scramblesuit", settings: {"key": "banana"} },
+    ///   TransportOption { name: "automata", settings: {"rule": "110"} },
+    ///   TransportOption { name: "automata", settings: {"depth": "3"} },
+    /// ]
+    #[test]
+    fn test_for_from_str_TransportOptions() {
+        assert_eq!(
+            TransportOptions::from_str(
+                "scramblesuit:key=banana;automata:rule=110;automata:depth=3"
+            )
+            .unwrap(),
+            TransportOptions {
+                options: vec![
+                    TransportOption {
+                        name: "scramblesuit".to_string(),
+                        settings: TransportOption::generate_settings(&[("key", "banana")])
+                    },
+                    TransportOption {
+                        name: "automata".to_string(),
+                        settings: TransportOption::generate_settings(&[("rule", "110")])
+                    },
+                    TransportOption {
+                        name: "automata".to_string(),
+                        settings: TransportOption::generate_settings(&[("depth", "3")])
+                    },
+                ]
+            }
+        );
+    }
 }
