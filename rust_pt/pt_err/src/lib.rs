@@ -54,6 +54,17 @@ mod macros;
 #[derive(Debug, Error, PartialEq)]
 pub enum ConfigError {
     /// Configuration error with additional context.
+    /// # Example
+    /// ```rust
+    /// use pt_err::ConfigError;
+    /// fn main() {
+    ///     assert_eq!(ConfigError::InvalidConfigErr {
+    ///         side: "client".to_string(),
+    ///         message:"I want to eat radishes".to_string()
+    ///     }.to_string(),
+    ///     "Invalid client Config: I want to eat radishes")
+    /// }
+    /// ```
     #[error("Invalid {side} Config: {message}")]
     InvalidConfigErr {
         /// Which side the pt is running
@@ -62,11 +73,24 @@ pub enum ConfigError {
         /// Additional context of the Error
         message: String,
     },
+    /// Configuration error caused by unsupported version
+    #[error("Unsupported Version {message}")]
+    UnsupportedVer {
+        /// Additional context of the Error
+        message: String,
+    },
 }
 /// Errors which could cause by variant
 #[derive(Debug, Error, PartialEq)]
 pub enum VariantError {
     /// Error indicates that the Variant hasn't found
+    /// # Example
+    /// ```rust
+    /// use pt_err::VariantError;
+    /// fn main() {
+    ///     let _ = VariantError::UnfoundError {message:"I want to eat radishes".to_string()};
+    /// }
+    /// ```
     #[error("Variant Unfound {message}")]
     UnfoundError {
         /// Additional context of the Error
