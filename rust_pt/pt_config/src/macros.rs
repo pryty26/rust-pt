@@ -146,7 +146,7 @@ define_derive_deftly! {
     /// TODO(rust-pt#4): I use $vindex due $v_explicit_discriminant is not stable yet
     export FromU8Index for enum:
     impl $ttype {
-        fn from_u8_index(v: usize) -> Result<Self, pt_err::VariantError> {
+        $tvis fn from_u8_index(v: usize) -> Result<Self, pt_err::VariantError> {
             match v {
                 $(
                     $vindex => Ok($vpat),
@@ -157,7 +157,7 @@ define_derive_deftly! {
             }
             }
         }
-        fn get_index(&self) -> Result<usize, pt_err::VariantError> {
+        $tvis fn get_index(&self) -> Result<usize, pt_err::VariantError> {
             match self {
                 $(
                     $vpat => Ok($vindex),
