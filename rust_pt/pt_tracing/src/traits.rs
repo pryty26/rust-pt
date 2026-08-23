@@ -13,17 +13,17 @@ pub trait TorPtCommunicator {
 
     /// Print an info message, conform with Tor-Pt Spec
     fn debug(message: &str) -> Self::DebugOutput;
-    
+
     /// Print an info message, conform with Tor-Pt Spec
     fn info(message: &str) -> Self::InfoOutput;
-    
+
     /// Print an error message, conform with Tor-Pt Spec
     fn error(message: &str) -> Self::ErrorOutput;
-    
+
     /// Print a notice message, conform with Tor-Pt Spec
     /// Unfortunately tracing do not have "notice" level. So we need to use manual if+println! instead.
     fn notice(message: &str) -> Self::NoticeOutput;
-    
+
     /// Print a warning message, conform with Tor-Pt Spec
     fn warn(message: &str) -> Self::WarnOutput;
 
@@ -49,7 +49,7 @@ pub trait TorPtCommunicator {
     ///
     /// `ENV-ERROR No TOR_PT_AUTH_COOKIE_FILE when TOR_PT_EXTENDED_SERVER_PORT set`
     fn env_error(msg: &str);
-    
+
     /// When a PT proxy first starts up, it must determine which version of the
     /// Pluggable Transports Specification to use to configure itself.
     ///
@@ -70,7 +70,7 @@ pub trait TorPtCommunicator {
     ///
     /// PT proxies MUST terminate after outputting a "VERSION-ERROR" message.
     fn version_error(msg: &str);
-    
+
     /// After negotiating the Pluggable Transport Specification version, PT client
     /// proxies MUST first validate `TOR_PT_PROXY` (3.2.2) if it is set, before
     /// initializing any transports.
@@ -79,7 +79,7 @@ pub trait TorPtCommunicator {
     /// respond with a message indicating that the proxy is valid, supported, and
     /// will be used OR a failure message.
     fn proxy_done();
-    
+
     /// The `VERSION` message is used to signal the Pluggable Transport
     /// Specification version that the PT proxy will use to configure its
     /// transports and communicate with the parent process.
@@ -95,7 +95,7 @@ pub trait TorPtCommunicator {
     ///
     /// `VERSION 1`
     fn version(version: &str);
-    
+
     /// The `PROXY-ERROR` message is used to signal that the upstream proxy
     /// specified by `TOR_PT_PROXY` is malformed, unsupported, or otherwise
     /// unusable.
@@ -107,7 +107,7 @@ pub trait TorPtCommunicator {
     ///
     /// `PROXY-ERROR SOCKS 4 upstream proxies unsupported.`
     fn proxy_error(msg: &str);
-    
+
     /// The `CMETHOD` message is used to signal that a requested PT transport
     /// has been launched, the protocol which the parent should use to make
     /// outgoing connections, and the IP address and port that the PT transport
@@ -119,7 +119,7 @@ pub trait TorPtCommunicator {
     ///
     /// `CMETHOD trebuchet socks5 127.0.0.1:19999`
     fn cmethod(transport: &str, proxy_type: &str, address: &str);
-    
+
     /// The `CMETHOD-ERROR` message is used to signal that a requested PT
     /// transport was unable to be launched.
     ///
@@ -127,14 +127,14 @@ pub trait TorPtCommunicator {
     ///
     /// `CMETHOD-ERROR trebuchet no rocks available`
     fn cmethod_error(transport: &str, msg: &str);
-    
+
     /// The `CMETHODS DONE` message signals that the PT proxy has finished
     /// initializing all of the transports that it is capable of handling.
     ///
     /// Upon sending the `CMETHODS DONE` message, the PT proxy initialization
     /// is complete.
     fn cmethods_done();
-    
+
     /// The `SMETHOD` message is used to signal that a requested PT transport
     /// has been launched, the protocol which will be used to handle incoming
     /// connections, and the IP address and port that clients should use to
@@ -149,7 +149,7 @@ pub trait TorPtCommunicator {
     ///
     /// `SMETHOD rot_by_N 198.51.100.1:2323 ARGS:N=13`
     fn smethod(transport: &str, address: &str, options: Option<&str>);
-    
+
     /// The `SMETHOD-ERROR` message is used to signal that a requested PT
     /// transport reverse proxy was unable to be launched.
     ///
@@ -157,7 +157,7 @@ pub trait TorPtCommunicator {
     ///
     /// `SMETHOD-ERROR trebuchet no cows available`
     fn smethod_error(transport: &str, msg: &str);
-    
+
     /// The `SMETHODS DONE` message signals that the PT proxy has finished
     /// initializing all of the transports that it is capable of handling.
     ///

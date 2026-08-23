@@ -52,7 +52,7 @@ use tracing::{debug, error, info, warn};
 use tracing_subscriber::{self};
 /// Traits for pt_tracing
 pub mod traits;
-use crate::traits::{TorPtCommunicator};
+use crate::traits::TorPtCommunicator;
 /// Make user easily use they would need
 pub mod prelude {
     pub use super::traits::TorPtCommunicator;
@@ -184,7 +184,6 @@ impl PtTracing {
         Ok(())
     }
 }
-
 
 impl TorPtCommunicator for PtTracing {
     type DebugOutput = Result<()>;
