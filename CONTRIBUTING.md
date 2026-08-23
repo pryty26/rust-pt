@@ -30,7 +30,7 @@ working Git installation to fetch the code.
   some packages, but if you compile from source set `USE_LIBPCRE=YesPlease`
   when running `make` or `--with-libpcre` when running `./configure`.
 
-## Some attension about your code
+### Some attention about your code
 
 1. If you are creating a TODO, please always open an Issue for it.
 
@@ -40,6 +40,12 @@ working Git installation to fetch the code.
    Of course, checking or searching grammar or translating docs is always fine. ('•ω•')
    We anticipate that all contributors are professional programmers who fully understand the code, 
    instead of professional Copy-Paste programmer
+
+## code style we prefer
+
+1. In complicated situation we would like to use *match* instead of *if* 
+   Because it's easier for reading
+
 
 ## Where are some good places to start hacking?
 
