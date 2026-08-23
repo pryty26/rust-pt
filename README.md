@@ -107,7 +107,10 @@ This project is still under developement, the pt_core and trasports are not done
 
 
 
+### Roadmap
 
+1. publish pt_tracing to crates.io
+2. publish pt_config to crates.io
 
 
 
