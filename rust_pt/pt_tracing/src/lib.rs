@@ -50,7 +50,14 @@ use std::sync::OnceLock;
 use tracing::level_filters::LevelFilter;
 use tracing::{debug, error, info, warn};
 use tracing_subscriber::{self};
-
+/// Traits for pt_tracing
+pub mod traits;
+use crate::traits::{TorPtCommunicator};
+/// Make user easily use they would need
+pub mod prelude {
+    pub use super::traits::TorPtCommunicator;
+    pub use crate::{PtTracing, SEVERITY};
+}
 /// The SEVERITY value indicate at which logging level the message applies.
 /// The accepted values for <Severity> are: error, warning, notice, info, debug
 #[repr(u8)]
@@ -92,7 +99,7 @@ impl From<SEVERITY> for LevelFilter {
 /// # Example
 ///
 /// ```rust
-/// use pt_tracing::{PtTracing, SEVERITY};
+/// use pt_tracing::prelude::*;
 ///
 /// fn main() -> anyhow::Result<()> {
 ///    // Examples of avaiable value in 2026/8/21
@@ -178,27 +185,34 @@ impl PtTracing {
     }
 }
 
-impl PtTracing {
+
+impl TorPtCommunicator for PtTracing {
+    type DebugOutput = Result<()>;
+    type InfoOutput = Result<()>;
+    type ErrorOutput = Result<()>;
+    type NoticeOutput = Result<()>;
+    type WarnOutput = Result<()>;
+
     /// Print a debug message, conform with Tor-Pt Spec
-    pub fn debug(message: &str) -> Result<()> {
+    fn debug(message: &str) -> Result<()> {
         debug!("LOG SEVERITY=debug MESSAGE=\"{}\"", message);
         Ok(())
     }
     /// Print an info message, conform with Tor-Pt Spec
-    pub fn info(message: &str) -> Result<()> {
+    fn info(message: &str) -> Result<()> {
         info!("LOG SEVERITY=info MESSAGE=\"{}\"", message);
         Ok(())
     }
 
     /// Print an error message, conform with Tor-Pt Spec
-    pub fn error(message: &str) -> Result<()> {
+    fn error(message: &str) -> Result<()> {
         error!("LOG SEVERITY=error MESSAGE=\"{}\"", message);
         Ok(())
     }
 
     /// Print a notice message, conform with Tor-Pt Spec
     /// Unfortunately tracing do not have "notice" level. So we need to use manual if+println! instead.
-    pub fn notice(message: &str) -> Result<()> {
+    fn notice(message: &str) -> Result<()> {
         // Severity enum values:
         // Error = 0, Warn = 1, Notice = 2, Info = 3, Debug = 4, Trace = 5
         // Notice messages should be printed when severity is DEBUG(1)、INFO(2)、NOTICE(3)
@@ -221,7 +235,7 @@ impl PtTracing {
     }
 
     /// Print a warning message, conform with Tor-Pt Spec
-    pub fn warn(message: &str) -> Result<()> {
+    fn warn(message: &str) -> Result<()> {
         warn!("LOG SEVERITY=warning MESSAGE=\"{}\"", message);
         Ok(())
     }
@@ -246,7 +260,7 @@ impl PtTracing {
     /// Example:
     ///
     /// `ENV-ERROR No TOR_PT_AUTH_COOKIE_FILE when TOR_PT_EXTENDED_SERVER_PORT set`
-    pub fn env_error(msg: &str) {
+    fn env_error(msg: &str) {
         println!("ENV-ERROR {}", msg);
     }
     /// When a PT proxy first starts up, it must determine which version of the
@@ -268,7 +282,7 @@ impl PtTracing {
     /// but MAY be set to a useful error message instead.
     ///
     /// PT proxies MUST terminate after outputting a “VERSION-ERROR” message.
-    pub fn version_error(msg: &str) {
+    fn version_error(msg: &str) {
         println!("VERSION-ERROR {}", &msg)
     }
     /// After negotiating the Pluggable Transport Specification version, PT client
@@ -278,7 +292,7 @@ impl PtTracing {
     /// Assuming that an upstream proxy is provided, PT client proxies MUST
     /// respond with a message indicating that the proxy is valid, supported, and
     /// will be used OR a failure message.
-    pub fn proxy_done() {
+    fn proxy_done() {
         println!("PROXY DONE")
     }
     /// The `VERSION` message is used to signal the Pluggable Transport
@@ -295,7 +309,7 @@ impl PtTracing {
     /// Example:
     ///
     /// `VERSION 1`
-    pub fn version(version: &str) {
+    fn version(version: &str) {
         println!("VERSION {}", version);
     }
 
@@ -309,7 +323,7 @@ impl PtTracing {
     /// Example:
     ///
     /// `PROXY-ERROR SOCKS 4 upstream proxies unsupported.`
-    pub fn proxy_error(msg: &str) {
+    fn proxy_error(msg: &str) {
         println!("PROXY-ERROR {}", msg);
     }
 
@@ -323,7 +337,7 @@ impl PtTracing {
     /// Example:
     ///
     /// `CMETHOD trebuchet socks5 127.0.0.1:19999`
-    pub fn cmethod(transport: &str, proxy_type: &str, address: &str) {
+    fn cmethod(transport: &str, proxy_type: &str, address: &str) {
         println!("CMETHOD {} {} {}", transport, proxy_type, address);
     }
 
@@ -333,7 +347,7 @@ impl PtTracing {
     /// Example:
     ///
     /// `CMETHOD-ERROR trebuchet no rocks available`
-    pub fn cmethod_error(transport: &str, msg: &str) {
+    fn cmethod_error(transport: &str, msg: &str) {
         println!("CMETHOD-ERROR {} {}", transport, msg);
     }
 
@@ -342,7 +356,7 @@ impl PtTracing {
     ///
     /// Upon sending the `CMETHODS DONE` message, the PT proxy initialization
     /// is complete.
-    pub fn cmethods_done() {
+    fn cmethods_done() {
         println!("CMETHODS DONE");
     }
 
@@ -359,7 +373,7 @@ impl PtTracing {
     /// `SMETHOD trebuchet 198.51.100.1:19999`
     ///
     /// `SMETHOD rot_by_N 198.51.100.1:2323 ARGS:N=13`
-    pub fn smethod(transport: &str, address: &str, options: Option<&str>) {
+    fn smethod(transport: &str, address: &str, options: Option<&str>) {
         match options {
             Some(options) => {
                 println!("SMETHOD {} {} {}", transport, address, options);
@@ -376,7 +390,7 @@ impl PtTracing {
     /// Example:
     ///
     /// `SMETHOD-ERROR trebuchet no cows available`
-    pub fn smethod_error(transport: &str, msg: &str) {
+    fn smethod_error(transport: &str, msg: &str) {
         println!("SMETHOD-ERROR {} {}", transport, msg);
     }
     /// The `SMETHODS DONE` message signals that the PT proxy has finished
@@ -384,7 +398,7 @@ impl PtTracing {
     ///
     /// Upon sending the `SMETHODS DONE` message, the PT proxy initialization
     /// is complete.
-    pub fn smethods_done() {
+    fn smethods_done() {
         println!("SMETHODS DONE");
     }
 }

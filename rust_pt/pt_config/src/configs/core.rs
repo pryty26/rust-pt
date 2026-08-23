@@ -1,6 +1,6 @@
 use crate::configs::configs::{ClientKey, CommonKey, ServerKey};
 use derive_deftly::Deftly;
-use pt_tracing::PtTracing;
+use pt_tracing::prelude::*;
 use serde::{Deserialize, Serialize};
 
 /// Main Config
