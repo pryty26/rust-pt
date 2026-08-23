@@ -1,5 +1,4 @@
 #![allow(non_snake_case)]
-use crate::MODE;
 use anyhow::Result;
 use derive_deftly::Deftly;
 use pt_err::ConfigError;
@@ -92,7 +91,6 @@ impl TryFrom<RawCommonKey> for CommonKey {
             0 | 1 => {},
             _ => {
                 return Err(ConfigError::InvalidConfigErr {
-                    side: (*MODE).into(),
                     message: "TOR_PT_EXIT_ON_STDIN_CLOSE should be 1 or 0".to_string(),
                 });
             },
@@ -105,7 +103,6 @@ impl TryFrom<RawCommonKey> for CommonKey {
             _ => "0.0.0.0"
                 .parse::<Ipv4Addr>()
                 .map_err(|e| ConfigError::InvalidConfigErr {
-                    side: (*MODE).into(),
                     message: format!("Invalid TOR_PT_OUTBOUND_BIND_ADDRESS_V4: {}", e),
                 })?,
         };
@@ -114,7 +111,6 @@ impl TryFrom<RawCommonKey> for CommonKey {
             _ => "::"
                 .parse::<Ipv6Addr>()
                 .map_err(|e| ConfigError::InvalidConfigErr {
-                    side: (*MODE).into(),
                     message: format!("Invalid TOR_PT_OUTBOUND_BIND_ADDRESS_V6: {}", e),
                 })?,
         };
@@ -189,6 +185,7 @@ pub struct ClientKey {
 }
 
 /// Validate a proxy Url
+/// NOTE: this function is taken from ptrs and we changed it slighly
 #[allow(clippy::collapsible_if)]
 pub fn validate_proxy_url(spec: &Url) -> Result<(), ClientKeyConfigError> {
     if !SCHEMES.contains(&spec.scheme()) {
@@ -391,7 +388,6 @@ impl FromStr for TransportOptions {
                     second
                         .split_once('=')
                         .ok_or_else(|| ConfigError::InvalidConfigErr {
-                            side: MODE.clone().into(),
                             message: "Invalid TransportOptions Config".to_string(),
                         })?;
 
