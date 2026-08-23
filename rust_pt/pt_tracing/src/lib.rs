@@ -45,7 +45,8 @@
 #![allow(clippy::print_stderr)]
 #![allow(clippy::print_stdout)]
 //! For detailed information, see [the spec] https://spec.torproject.org/pt-spec/ipc.html
-use anyhow::Result;
+use anyhow::{Result, anyhow, bail};
+use std::sync::OnceLock;
 use tracing::level_filters::LevelFilter;
 use tracing::{debug, error, info, warn};
 use tracing_subscriber::{self};
@@ -67,6 +68,9 @@ pub enum SEVERITY {
     /// Sets the log level to **ERROR**, displaying all messages with a severity of **ERROR** or higher.
     ERROR = 5,
 }
+
+/// pt_tracing stores the config of pt_tracing
+pub static PT_TRACING: OnceLock<PtTracing> = OnceLock::new();
 
 impl From<SEVERITY> for LevelFilter {
     fn from(severity: SEVERITY) -> Self {
@@ -100,12 +104,11 @@ impl From<SEVERITY> for LevelFilter {
 ///         SEVERITY::ERROR,
 ///     );
 ///     let level = SEVERITY::NOTICE;
-///     // Or:
-///     let pt_tracing = PtTracing::new(level);
-///     pt_tracing.init()?;
+///     PtTracing::fmt()
+///         .with_severity(level);
 ///     // Yes I used Result in every DEBUG, INFO, NOTICE, WARNING, ERROR function
-///     pt_tracing.debug("cool debug message")?;
-///     pt_tracing.info("cool info message")?;
+///     PtTracing::debug("cool debug message")?;
+///     PtTracing::info("cool info message")?;
 ///     // And so on
 ///     Ok(())
 /// }
@@ -115,10 +118,39 @@ pub struct PtTracing {
     /// The accepted values for <Severity> are: error, warning, notice, info, debug
     pub severity: SEVERITY,
 }
+
+/// Functions of PtTracing's config
 impl PtTracing {
-    /// init the config with PtTracingConfig
+    /// Get config From PT_TRACING
+    pub fn get_config() -> &'static Self {
+        match PT_TRACING.get() {
+            None => {
+                println!("LOG SEVERITY=error MESSAGE=\"pt_tracing is never inited\"");
+                panic!("pt_tracing is never inited")
+            },
+            Some(pt_tracing) => {
+                return pt_tracing;
+            },
+        }
+    }
+    /// init the tracing config with default severity which is NOTICE
+    pub fn fmt() -> Self {
+        PtTracing {
+            severity: SEVERITY::NOTICE,
+        }
+    }
+    /// change the SEVERITY of config
+    pub fn with_severity(mut self, severity: SEVERITY) -> Self {
+        self.severity = severity;
+        self
+    }
+
+    /// init the tracing config
+    /// This is decided as a sealed function,
+    /// because we don't want to let user call directly the init(...),
+    /// since our structure is still unstable
     /// TODO: add more flexible configuration
-    pub fn init(&self) -> Result<()> {
+    pub fn try_init(self) -> Result<()> {
         tracing_subscriber::fmt()
             .with_max_level(self.severity)
             .compact()
@@ -132,43 +164,56 @@ impl PtTracing {
             .without_time()
             .try_init()
             .map_err(|e| anyhow::anyhow!(e))?;
+
+        match PT_TRACING.set(self) {
+            Err(_) => {
+                println!("LOG SEVERITY=error MESSAGE=\"pt_tracing already inited\"");
+                bail!("pt_tracing already inited")
+            },
+            Ok(_) => {
+                PtTracing::notice("PT_TRACING is set")?;
+            },
+        }
         Ok(())
     }
-    /// Return a new PtTracingConfig
-    pub fn new(severity: SEVERITY) -> Self {
-        PtTracing { severity: severity }
-    }
-    /// Return a default PtTracingConfig
-    /// Set SEVERITY as NOTICE
-    pub fn default_config() -> Self {
-        PtTracing::new(SEVERITY::NOTICE)
-    }
+}
+
+impl PtTracing {
     /// Print a debug message, conform with Tor-Pt Spec
-    pub fn debug(&self, message: &str) -> Result<()> {
-        debug!("LOG SEVERITY=debug MESSAGE={}", message);
+    pub fn debug(message: &str) -> Result<()> {
+        debug!("LOG SEVERITY=debug MESSAGE=\"{}\"", message);
         Ok(())
     }
     /// Print an info message, conform with Tor-Pt Spec
-    pub fn info(&self, message: &str) -> Result<()> {
-        info!("LOG SEVERITY=info MESSAGE={}", message);
+    pub fn info(message: &str) -> Result<()> {
+        info!("LOG SEVERITY=info MESSAGE=\"{}\"", message);
         Ok(())
     }
 
     /// Print an error message, conform with Tor-Pt Spec
-    pub fn error(&self, message: &str) -> Result<()> {
-        error!("LOG SEVERITY=error MESSAGE={}", message);
+    pub fn error(message: &str) -> Result<()> {
+        error!("LOG SEVERITY=error MESSAGE=\"{}\"", message);
         Ok(())
     }
 
     /// Print a notice message, conform with Tor-Pt Spec
     /// Unfortunately tracing do not have "notice" level. So we need to use manual if+println! instead.
-    pub fn notice(&self, message: &str) -> Result<()> {
+    pub fn notice(message: &str) -> Result<()> {
         // Severity enum values:
         // Error = 0, Warn = 1, Notice = 2, Info = 3, Debug = 4, Trace = 5
         // Notice messages should be printed when severity is DEBUG(1)、INFO(2)、NOTICE(3)
-        match self.severity {
+        match PT_TRACING
+            .get()
+            .ok_or_else(|| {
+                println!("LOG SEVERITY=error MESSAGE=\"pt_tracing is never inited\"");
+                anyhow!("pt_tracing is never inited")
+            })?
+            .severity
+        {
             SEVERITY::DEBUG | SEVERITY::INFO | SEVERITY::NOTICE => {
-                println!("LOG SEVERITY=notice MESSAGE={}", message);
+                // NOTE: we used warn!(..) in notice, but it's acceptable
+                // since only SEVERITY::DEBUG | SEVERITY::INFO | SEVERITY::NOTICE will entry this branch
+                warn!("LOG SEVERITY=notice MESSAGE=\"{}\"", message);
             },
             SEVERITY::WARNING | SEVERITY::ERROR => {},
         }
@@ -176,8 +221,8 @@ impl PtTracing {
     }
 
     /// Print a warning message, conform with Tor-Pt Spec
-    pub fn warn(&self, message: &str) -> Result<()> {
-        warn!("LOG SEVERITY=warning MESSAGE={}", message);
+    pub fn warn(message: &str) -> Result<()> {
+        warn!("LOG SEVERITY=warning MESSAGE=\"{}\"", message);
         Ok(())
     }
     /// After version negotiation has been completed, the PT proxy must then
@@ -201,7 +246,7 @@ impl PtTracing {
     /// Example:
     ///
     /// `ENV-ERROR No TOR_PT_AUTH_COOKIE_FILE when TOR_PT_EXTENDED_SERVER_PORT set`
-    pub fn env_error(&self, msg: &str) {
+    pub fn env_error(msg: &str) {
         println!("ENV-ERROR {}", msg);
     }
     /// When a PT proxy first starts up, it must determine which version of the
@@ -223,7 +268,7 @@ impl PtTracing {
     /// but MAY be set to a useful error message instead.
     ///
     /// PT proxies MUST terminate after outputting a “VERSION-ERROR” message.
-    pub fn version_error(&self, msg: &str) {
+    pub fn version_error(msg: &str) {
         println!("VERSION-ERROR {}", &msg)
     }
     /// After negotiating the Pluggable Transport Specification version, PT client
@@ -233,7 +278,7 @@ impl PtTracing {
     /// Assuming that an upstream proxy is provided, PT client proxies MUST
     /// respond with a message indicating that the proxy is valid, supported, and
     /// will be used OR a failure message.
-    pub fn proxy_done(&self) {
+    pub fn proxy_done() {
         println!("PROXY DONE")
     }
     /// The `VERSION` message is used to signal the Pluggable Transport
@@ -250,7 +295,7 @@ impl PtTracing {
     /// Example:
     ///
     /// `VERSION 1`
-    pub fn version(&self, version: &str) {
+    pub fn version(version: &str) {
         println!("VERSION {}", version);
     }
 
@@ -264,7 +309,7 @@ impl PtTracing {
     /// Example:
     ///
     /// `PROXY-ERROR SOCKS 4 upstream proxies unsupported.`
-    pub fn proxy_error(&self, msg: &str) {
+    pub fn proxy_error(msg: &str) {
         println!("PROXY-ERROR {}", msg);
     }
 
@@ -278,7 +323,7 @@ impl PtTracing {
     /// Example:
     ///
     /// `CMETHOD trebuchet socks5 127.0.0.1:19999`
-    pub fn cmethod(&self, transport: &str, proxy_type: &str, address: &str) {
+    pub fn cmethod(transport: &str, proxy_type: &str, address: &str) {
         println!("CMETHOD {} {} {}", transport, proxy_type, address);
     }
 
@@ -288,7 +333,7 @@ impl PtTracing {
     /// Example:
     ///
     /// `CMETHOD-ERROR trebuchet no rocks available`
-    pub fn cmethod_error(&self, transport: &str, msg: &str) {
+    pub fn cmethod_error(transport: &str, msg: &str) {
         println!("CMETHOD-ERROR {} {}", transport, msg);
     }
 
@@ -297,7 +342,7 @@ impl PtTracing {
     ///
     /// Upon sending the `CMETHODS DONE` message, the PT proxy initialization
     /// is complete.
-    pub fn cmethods_done(&self) {
+    pub fn cmethods_done() {
         println!("CMETHODS DONE");
     }
 
@@ -314,7 +359,7 @@ impl PtTracing {
     /// `SMETHOD trebuchet 198.51.100.1:19999`
     ///
     /// `SMETHOD rot_by_N 198.51.100.1:2323 ARGS:N=13`
-    pub fn smethod(&self, transport: &str, address: &str, options: Option<&str>) {
+    pub fn smethod(transport: &str, address: &str, options: Option<&str>) {
         match options {
             Some(options) => {
                 println!("SMETHOD {} {} {}", transport, address, options);
@@ -331,7 +376,7 @@ impl PtTracing {
     /// Example:
     ///
     /// `SMETHOD-ERROR trebuchet no cows available`
-    pub fn smethod_error(&self, transport: &str, msg: &str) {
+    pub fn smethod_error(transport: &str, msg: &str) {
         println!("SMETHOD-ERROR {} {}", transport, msg);
     }
     /// The `SMETHODS DONE` message signals that the PT proxy has finished
@@ -339,11 +384,10 @@ impl PtTracing {
     ///
     /// Upon sending the `SMETHODS DONE` message, the PT proxy initialization
     /// is complete.
-    pub fn smethods_done(&self) {
+    pub fn smethods_done() {
         println!("SMETHODS DONE");
     }
 }
-
 #[cfg(test)]
 mod test {
     // @@ begin test lint list maintained by maint/add_warning @@
@@ -368,11 +412,11 @@ mod test {
         /// Print a notice message, conform with Tor-Pt Spec
         /// Unfortunately tracing do not have "notice" level. So we need to use manual if+println! instead.
         /// This is only for test
-        pub fn notice_for_test(&self, message: &str) -> Result<()> {
+        pub fn notice_for_test(message: &str) -> Result<()> {
             // Severity enum values:
             // Error = 0, Warn = 1, Notice = 2, Info = 3, Debug = 4, Trace = 5
             // Notice messages should be printed when severity is DEBUG(1)、INFO(2)、NOTICE(3)
-            match self.severity {
+            match Self::get_config().severity {
                 SEVERITY::DEBUG | SEVERITY::INFO | SEVERITY::NOTICE => {
                     println!("LOG SEVERITY=notice MESSAGE={}", message);
                 },
@@ -385,9 +429,8 @@ mod test {
     }
     #[test]
     fn test_for_notice() -> anyhow::Result<()> {
-        let t: PtTracing = PtTracing::default_config();
-        t.init()?;
-        t.notice("notice").unwrap();
+        PtTracing::fmt().with_severity(SEVERITY::DEBUG).try_init();
+        PtTracing::notice_for_test("notice").unwrap();
         Ok(())
     }
 }
