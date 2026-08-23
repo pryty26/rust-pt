@@ -1,5 +1,6 @@
 use crate::configs::configs::{ClientKey, CommonKey, ServerKey};
 use derive_deftly::Deftly;
+use pt_tracing::PtTracing;
 use serde::{Deserialize, Serialize};
 
 /// Main Config
@@ -25,6 +26,44 @@ pub enum ConfigKey {
         #[serde(flatten)]
         common_key: CommonKey,
     },
+}
+
+impl ConfigKey {
+    /// initialize Config from env
+    /// We panic fastly here
+    pub fn init() -> Self {
+        let common_key = match envy::from_env::<CommonKey>() {
+            Err(x) => {
+                PtTracing::env_error(&format!("Invalid or unset CommonKey {}", x.to_string()));
+                panic!("Invalid or unset CommonKey")
+            },
+            Ok(common_key) => common_key,
+        };
+        let key = match (envy::from_env::<ServerKey>(), envy::from_env::<ClientKey>()) {
+            (Err(_), Ok(client_key)) => ConfigKey::Client {
+                client_key,
+                common_key,
+            },
+            (Ok(server_key), Err(_)) => ConfigKey::Server {
+                server_key,
+                common_key,
+            },
+            (Err(x), Err(y)) => {
+                PtTracing::env_error(&format!(
+                    "Invalid or unset ServerKey and ClientKey 
+                You must set one of them:  {} {}",
+                    x.to_string(),
+                    y.to_string()
+                ));
+                panic!("env error")
+            },
+            (Ok(_), Ok(_)) => {
+                PtTracing::env_error("ServerKey and Client are both set. You may only set one");
+                panic!("ServerKey and Client are both set You may only set one")
+            },
+        };
+        key
+    }
 }
 
 #[cfg(test)]
@@ -78,17 +117,7 @@ mod test {
     #[test]
     fn server_parse_test() -> anyhow::Result<()> {
         set_env();
-        for (key, value) in std::env::vars() {
-            if key.starts_with("TOR_PT_") {
-                eprintln!("{} = {:?}", key, value);
-            }
-        }
-        let common_result = envy::from_env::<CommonKey>()?;
-        let server_result = envy::from_env::<ServerKey>()?;
-        ConfigKey::Server {
-            common_key: common_result,
-            server_key: server_result,
-        };
+        let config_key = ConfigKey::init();
         Ok(())
     }
 }

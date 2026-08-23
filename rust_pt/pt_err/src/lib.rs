@@ -59,17 +59,13 @@ pub enum ConfigError {
     /// use pt_err::ConfigError;
     /// fn main() {
     ///     assert_eq!(ConfigError::InvalidConfigErr {
-    ///         side: "client".to_string(),
     ///         message:"I want to eat radishes".to_string()
     ///     }.to_string(),
-    ///     "Invalid client Config: I want to eat radishes")
+    ///     "Invalid Config: I want to eat radishes")
     /// }
     /// ```
-    #[error("Invalid {side} Config: {message}")]
+    #[error("Invalid Config: {message}")]
     InvalidConfigErr {
-        /// Which side the pt is running
-        /// could be Server, Client or Unknown
-        side: String,
         /// Additional context of the Error
         message: String,
     },

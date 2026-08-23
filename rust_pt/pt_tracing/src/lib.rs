@@ -404,7 +404,6 @@ mod test {
     #![allow(clippy::needless_pass_by_value)]
     #![allow(clippy::string_slice)] // See arti#2571
     //! <!-- @@ end test lint list maintained by maint/add_warning @@ -->
-    #![allow(unused)]
     use super::*;
 
     ///! wkwkwk I just copy-pasted pt-spec
@@ -429,7 +428,10 @@ mod test {
     }
     #[test]
     fn test_for_notice() -> anyhow::Result<()> {
-        PtTracing::fmt().with_severity(SEVERITY::DEBUG).try_init();
+        PtTracing::fmt()
+            .with_severity(SEVERITY::DEBUG)
+            .try_init()
+            .unwrap();
         PtTracing::notice_for_test("notice").unwrap();
         Ok(())
     }

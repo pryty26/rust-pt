@@ -46,50 +46,15 @@
 //! <!-- @@ end lint list
 #[doc(hidden)]
 pub use derive_deftly;
-use derive_deftly::Deftly;
 /// Detailed configs
 pub mod configs;
 /// Diffrent macros which could be helpful
 pub mod macros;
 use dotenvy::dotenv;
 use once_cell::sync::Lazy;
-use std::env;
 /// variables
 pub mod variable;
 /// Init the .env
 pub static ENV_LOADED: Lazy<()> = Lazy::new(|| {
     let _ = dotenv().ok();
-});
-/// SideMode which declares which side the service is running
-#[repr(u8)]
-#[derive(Debug, Clone, Copy, Deftly)]
-#[derive_deftly(FromString)]
-pub enum SideMode {
-    /// We are running on the Client. We need to establish a connection to the server
-    Client = 0,
-    /// We are running on the Server. We need to accept the connection
-    Server = 1,
-    /// We don't know where we are!(╯°□°）╯︵ ┻━┻
-    /// But don't worry we will know where we are when we've parsed the config.╰(°▽°)╯
-    /// Unknown is a temporary state that should be resolved
-    Unknown = 2,
-}
-
-/// Get SiteMode from the .env
-/// TODO(pryty26):
-/// We should add log!(When the pt_tracing is done)
-pub const MODE: Lazy<SideMode> = Lazy::new(|| {
-    let _ = &*ENV_LOADED;
-    let mode_str = env::var("SIDEMODE")
-        .ok()
-        .map(|s| s.to_lowercase())
-        .unwrap_or_default();
-
-    match mode_str.as_str() {
-        "server" => SideMode::Server,
-        "client" => SideMode::Client,
-        // This is acceptable,
-        // because we will know which side we are running when we've parsed the Config
-        _ => SideMode::Unknown,
-    }
 });
