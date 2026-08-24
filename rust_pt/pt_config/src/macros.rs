@@ -141,9 +141,6 @@ define_derive_deftly! {
     ///     }
     ///     // Else funtions....
     /// }
-    ///
-    ///
-    /// TODO(rust-pt#4): I use $vindex due $v_explicit_discriminant is not stable yet
     export FromU8Index for enum:
     impl $ttype {
         $tvis fn from_u8_index(v: usize) -> Result<Self, pt_err::VariantError> {
@@ -169,5 +166,48 @@ define_derive_deftly! {
             }
         }
     }
+}
 
+define_derive_deftly! {
+    /// Get the variant from discriminant
+    /// # Errors
+    /// Returns `pt_err::VariantError::UnfoundError` if the index does not match any enum variant.
+    /// # Example
+    /// ```rust
+    /// pub use derive_deftly::{define_derive_deftly, Deftly};
+    /// pub use pt_config::derive_deftly_template_FromDiscriminant;
+    /// pub use anyhow::Result;
+    /// #[repr(u8)]
+    /// #[derive(Deftly)]
+    /// #[derive_deftly(FromDiscriminant)]
+    /// enum Ex {
+    ///     A = 0,
+    ///     B = 1,
+    /// }
+    /// fn main() -> Result<()> {
+    ///     let x = Ex::from_discriminant(0 as usize).unwrap();
+    ///     match x {
+    ///         Ex::A => println!("success"),
+    ///         _ => panic!("from_discriminant failed")
+    ///     }
+    ///     Ok(())
+    /// }
+    /// ```
+    export FromDiscriminant for enum:
+    impl $ttype {
+        $tvis fn from_discriminant(v: usize) -> Result<Self, pt_err::VariantError> {
+            $(
+                let $< discriminant_ $vname > = $vpat as usize;
+            )
+            match v {
+            $(
+                $< discriminant_ $vname > => Ok($vpat),
+            )
+            _ => { return Err(pt_err::VariantError::UnfoundError {
+                    message: "".to_string()
+                });
+            },
+        }
+    }
+    }
 }
