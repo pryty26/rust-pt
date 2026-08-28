@@ -195,6 +195,7 @@ define_derive_deftly! {
     /// ```
     export FromDiscriminant for enum:
     impl $ttype {
+        /// Get the variant from discriminant
         $tvis fn from_discriminant(v: usize) -> Result<Self, pt_err::VariantError> {
             $(
                 let $< discriminant_ $vname > = $vpat as usize;
