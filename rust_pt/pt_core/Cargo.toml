@@ -10,3 +10,8 @@ pt_err = { path = "../pt_err" }
 pt_tracing = { path = "../pt_tracing" }
 # Configuration parsing
 pt_config = { path = "../pt_config"}
+derive-deftly = { workspace = true }
+tokio = { workspace = true }
+anyhow = { workspace = true }
+hmac = { workspace = true }
+sha2 = { workspace = true }

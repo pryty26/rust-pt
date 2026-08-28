@@ -49,6 +49,20 @@ pub use derive_deftly;
 use thiserror::Error;
 /// Diffrent macros for Error
 mod macros;
+/// Errors which is related with ExtOrPort
+#[derive(Debug, Error, PartialEq)]
+pub enum ExtOrPortError {
+    /// The StaticHeader is invalid
+    #[error("Invalid StaticHeader it should be \"! Extended ORPort Auth Cookie !\x0a\"")]
+    InvalidStaticHeader,
+    /// Unsupported auth types
+    /// We have not found the supported auth types
+    #[error("Unsupported auth types")]
+    UnsupportedAuthTypes,
+    /// EndAuthType Unfound
+    #[error("EndAuthTypeUnfound")]
+    EndAuthTypeUnfound,
+}
 
 /// Errors which could cause during the Config parsing.
 #[derive(Debug, Error, PartialEq)]

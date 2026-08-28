@@ -1,11 +1,10 @@
 use crate::configs::configs::{ClientKey, CommonKey, ServerKey};
-use derive_deftly::Deftly;
 use pt_tracing::prelude::*;
 use serde::{Deserialize, Serialize};
 
 /// Main Config
-/// But we are not going to serializing it
-#[derive(Deftly, Serialize, Deserialize)]
+/// But we are not going to serialize it
+#[derive(Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum ConfigKey {
     /// Config which is needed in Server Side
@@ -51,15 +50,15 @@ impl ConfigKey {
             (Err(x), Err(y)) => {
                 PtTracing::env_error(&format!(
                     "Invalid or unset ServerKey and ClientKey 
-                You must set one of them:  {} {}",
+                    You must set one of them:  {} {}",
                     x.to_string(),
                     y.to_string()
                 ));
                 panic!("env error")
             },
             (Ok(_), Ok(_)) => {
-                PtTracing::env_error("ServerKey and Client are both set. You may only set one");
-                panic!("ServerKey and Client are both set You may only set one")
+                PtTracing::env_error("ServerKey and ClientKey are both set. You may only set one");
+                panic!("ServerKey and ClientKey are both set You may only set one")
             },
         };
         key
