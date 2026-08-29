@@ -1,7 +1,6 @@
 use crate::configs::configs::{ClientKey, CommonKey, ServerKey};
-use pt_tracing::prelude::*;
+use pt_tracing::rec_panic;
 use serde::{Deserialize, Serialize};
-
 /// Main Config
 /// But we are not going to serialize it
 #[derive(Serialize, Deserialize)]
@@ -33,8 +32,7 @@ impl ConfigKey {
     pub fn init() -> Self {
         let common_key = match envy::from_env::<CommonKey>() {
             Err(x) => {
-                PtTracing::env_error(&format!("Invalid or unset CommonKey {}", x.to_string()));
-                panic!("Invalid or unset CommonKey")
+                rec_panic!(&format!("Invalid or unset CommonKey {}", x.to_string()));
             },
             Ok(common_key) => common_key,
         };
@@ -48,17 +46,15 @@ impl ConfigKey {
                 common_key,
             },
             (Err(x), Err(y)) => {
-                PtTracing::env_error(&format!(
+                rec_panic!(&format!(
                     "Invalid or unset ServerKey and ClientKey 
                     You must set one of them:  {} {}",
                     x.to_string(),
                     y.to_string()
                 ));
-                panic!("env error")
             },
             (Ok(_), Ok(_)) => {
-                PtTracing::env_error("ServerKey and ClientKey are both set. You may only set one");
-                panic!("ServerKey and ClientKey are both set You may only set one")
+                rec_panic!("ServerKey and ClientKey are both set. You may only set one");
             },
         };
         key

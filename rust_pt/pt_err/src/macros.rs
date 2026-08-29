@@ -1,5 +1,48 @@
 use derive_deftly::define_derive_deftly;
-
+define_derive_deftly! {
+    /// Implement From for $ttype::Other(...)
+    /// Errors which is using that must have a:
+    /// #[error(...)]
+    /// Other(String)
+    /// variant
+    /// # Example
+    /// ```rust
+    /// use thiserror::*;
+    /// pub use derive_deftly::{Deftly};
+    /// pub use pt_err::derive_deftly_template_OtherFromError;
+    /// pub use anyhow::anyhow;
+    /// #[derive(Debug, Error, Deftly, PartialEq, Eq)]
+    /// #[derive_deftly(OtherFromError)]
+    /// enum Ex2 {
+    ///     #[error("example: {0}")]
+    ///     Other(String)
+    /// }
+    /// fn foo() -> Ex2 {
+    ///     anyhow!("Example").into()
+    /// }
+    /// 
+    /// fn bar() -> Ex2 {
+    ///     std::io::Error::other("skibidi").into()
+    /// }
+    /// fn main() -> () {
+    ///     assert_eq!(foo(), Ex2::Other("Example".to_string()));
+    ///     assert_eq!(bar(), Ex2::Other("skibidi".to_string()));
+    ///     ()
+    /// }
+    ///
+    /// ```
+    export OtherFromError for enum:
+    impl From<std::io::Error> for $ttype {
+        fn from(err: std::io::Error) -> Self {
+            $ttype::Other(err.to_string())
+        }
+    }
+    impl From<anyhow::Error> for $ttype {
+        fn from(err: anyhow::Error) -> Self {
+            $ttype::Other(err.to_string())
+        }
+    }
+}
 define_derive_deftly! {
     /// Macro which will automatically create Invalid$variant and $variantUnfound
     ///  for every variant or fields
@@ -7,7 +50,6 @@ define_derive_deftly! {
     /// # Example
     /// ```rust
     /// use std::fmt::Display;
-    /// use thiserror::*;
     /// pub use derive_deftly::{define_derive_deftly, Deftly};
     /// pub use pt_err::derive_deftly_template_DefineVariantError;
     /// pub use anyhow::Result;

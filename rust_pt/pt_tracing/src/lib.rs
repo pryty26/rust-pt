@@ -58,6 +58,8 @@ pub mod prelude {
     pub use super::traits::TorPtCommunicator;
     pub use crate::{PtTracing, SEVERITY};
 }
+/// Macros
+pub mod macros;
 /// The SEVERITY value indicate at which logging level the message applies.
 /// The accepted values for <Severity> are: error, warning, notice, info, debug
 #[repr(u8)]
