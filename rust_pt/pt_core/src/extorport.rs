@@ -1,15 +1,19 @@
 use crate::variables::StaticHeader;
-use anyhow::{Result};
+use anyhow::{Result, anyhow};
 use derive_deftly::Deftly;
+use getrandom::fill;
 use hmac::{Hmac, KeyInit, Mac};
-use pt_config::derive_deftly_template_FromDiscriminant;
+use pt_config::{derive_deftly_template_FromDiscriminant, derive_deftly_template_FromString};
 use pt_err::ExtOrPortError;
+use pt_tracing::rec_panic;
 use sha2::Sha256;
 use std::net::SocketAddr;
 use std::path::PathBuf;
 use tokio::fs;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::TcpStream;
+///! See: (https://spec.torproject.org/ext-orport-spec.html)
+use tokio::net::tcp::{ReadHalf, WriteHalf};
 /// CookieString
 pub type CookieString = [u8; 32];
 /// Buffer for AuthTypes negotiation (null-terminated u8 list).
@@ -24,15 +28,32 @@ pub fn mac_message(key: &[u8], message: &[u8]) -> Result<[u8; 32]> {
     Ok(mac.finalize().into_bytes().into())
 }
 /// Different state for Pt ExtOrPort
+#[derive(Deftly, PartialEq, Eq)]
+#[derive_deftly(FromDiscriminant, FromString)]
 pub enum ExtOrPortState {
     /// Negetiating the auth type
-    AuthTypesNegotiation,
+    AuthTypesNegotiation = 0,
+    /// SafeCookie authenticating
+    SafeCookieAuthentication = 1,
     // TODO: Add else
+}
+/// Different state for Safe Cookie Authentication
+#[derive(Deftly, PartialEq, Eq)]
+#[derive_deftly(FromDiscriminant, FromString)]
+pub enum SafeCookieState {
+    /// Send Client Nonce
+    SendClientNonce = 0,
+    /// Recerve server nonce
+    RecvServerNonce = 1,
+    /// Send Client Hash
+    SendClientHash = 2,
+    /// Receive the final server Response after sending client hash
+    RecvFinalResp = 3,
 }
 /// Config for ExtOrPort
 pub struct ExtOrPort {
     /// Addr of ExtOrPort
-    pub addr: SocketAddr,
+    addr: SocketAddr,
     /// We define one authentication type: SAFE_COOKIE.
     /// Its AuthType value is 1.
     /// It is based on the client proving to the bridge that it can access a given “cookie” file on disk.
@@ -47,9 +68,9 @@ pub struct ExtOrPort {
     /// ExtORPortCookieAuthFile <path>
     /// ```
     /// where <path> is a filesystem path.
-    pub auth_cookie_file: PathBuf,
+    auth_cookie_file: PathBuf,
     /// Different state for Pt ExtOrPort
-    pub state: ExtOrPortState,
+    state: ExtOrPortState,
 }
 
 /// Diffrent auth types
@@ -85,7 +106,7 @@ pub struct ExtOrPort {
 /// ```
 #[repr(u8)]
 #[derive(Deftly, PartialEq, Eq, Copy, Clone)]
-#[derive_deftly(FromDiscriminant)]
+#[derive_deftly(FromDiscriminant, FromString)]
 pub enum AuthTypes {
     /// EndAuthType
     /// It is not a AuthType
@@ -162,8 +183,114 @@ impl ExtOrPort {
         message[78..110].copy_from_slice(server_nonce);
         Ok(mac_message(cookie, &message)?)
     }
+    /// Check if the sender closes the connection, if so,
+    /// then we should panic
+    fn check_msg(msg: usize) {
+        if msg == 0 {
+            // The sender closed connection and we should panic,
+            // because if we can not establish a connection,
+            // it means we can not send data to the tor server
+            // therefore, we must panic to tell the user that we have not estalbished connection
+            rec_panic!("The sender closed connection in ExtOrPort");
+        }
+    }
+    /// safe cookie authentication
+    async fn safe_cookie_authentication(
+        &mut self,
+        writer: &mut WriteHalf<'_>,
+        reader: &mut ReadHalf<'_>,
+    ) -> Result<(), ExtOrPortError> {
+        let cookie_string: CookieString = self.auth_cookie().await?;
+        let mut server_nonce_buf: [u8; 32] = [0; 32];
+        let client_nonce = {
+            let mut buf: [u8; 32] = [0; 32];
+            fill(&mut buf).map_err(|e| anyhow!(e))?;
+            buf
+        };
+        writer
+            .write_all(&client_nonce)
+            .await
+            .map_err(|e| anyhow!(e))?;
+        let mut auth_state = SafeCookieState::RecvServerNonce;
+        'l: loop {
+            match auth_state {
+                SafeCookieState::SendClientNonce => {
+                    unreachable!("SendClientNonce should be changed before that!")
+                },
+                SafeCookieState::RecvServerNonce => {
+                    //
+                    // Then, the server replies with:
+                    //
+                    //      ServerHash                                  [32 octets]
+                    //      ServerNonce                                 [32 octets]
+                    //
+                    //   Where,
+                    //   + ServerHash is computed as:
+                    //       HMAC-SHA256(CookieString,
+                    //         "ExtORPort authentication server-to-client hash" | ClientNonce | ServerNonce)
+                    //   + ServerNonce is 32 random octets.
+                    let mut buf = [0; 64];
+                    Self::check_msg(reader.read_exact(&mut buf).await.map_err(|e| anyhow!(e))?);
+                    let server_nonce: [u8; 32] = buf[32..64].try_into().map_err(|_| {
+                        ExtOrPortError::InvalidServerMsg("Invalid ServerNonce".to_string())
+                    })?;
+                    let expected_serv_hash =
+                        Self::server_hash(&cookie_string, &client_nonce, &server_nonce)?;
+                    let server_hash: [u8; 32] = buf[0..32].try_into().map_err(|_| {
+                        ExtOrPortError::InvalidServerMsg("Invalid ServerHash".to_string())
+                    })?;
+                    match server_hash {
+                        _ if server_hash == expected_serv_hash => {
+                            server_nonce_buf = server_nonce;
+                            auth_state = SafeCookieState::SendClientHash;
+                            continue 'l;
+                        },
+                        _ => {
+                            return Err(ExtOrPortError::InvalidServerHash);
+                        },
+                    }
+                },
+                SafeCookieState::SendClientHash => {
+                    // ClientHash                                  [32 octets]
+                    //
+                    // Where,
+                    // + ClientHash is computed as:
+                    //     HMAC-SHA256(CookieString,
+                    //       "ExtORPort authentication client-to-server hash" | ClientNonce | ServerNonce)
+                    writer
+                        .write_all(&Self::client_hash(
+                            &cookie_string,
+                            &client_nonce,
+                            &server_nonce_buf,
+                        )?)
+                        .await?;
+                    auth_state = SafeCookieState::RecvFinalResp;
+                },
+                SafeCookieState::RecvFinalResp => {
+                    let mut buf = [0; 1];
+                    Self::check_msg(reader.read_exact(&mut buf).await?);
+                    match buf {
+                        // Status   [1 octet]
+                        //
+                        // Where,
+                        // + Status is 1 if the authentication was successful.
+                        // If the   authentication failed, Status is 0.
+                        [1] => {
+                            // anthentication was successful
+                            // break and the function will return Ok(())
+                            break;
+                        },
+                        _ => {
+                            return Err(ExtOrPortError::InvalidClientHash);
+                        },
+                    }
+                },
+            }
+        }
+        Ok(())
+    }
     /// Auth types negotiation
-    pub fn auth_types_neg(&self, buf: AuthNegBuf) -> Result<AuthTypes, ExtOrPortError> {
+    fn auth_types_neg(&self, buf: AuthNegBuf) -> Result<AuthTypes, ExtOrPortError> {
         // supported auth types
         let mut sup_buf = Vec::<AuthTypes>::new();
         let mut end_found = false;
@@ -185,7 +312,7 @@ impl ExtOrPort {
                 None => {
                     // Nothing to do here, we do not support that AuthTypes
                     // so just continue
-                    continue
+                    continue;
                 },
             }
         }
@@ -193,7 +320,7 @@ impl ExtOrPort {
             false => {
                 return Err(ExtOrPortError::EndAuthTypeUnfound);
             },
-            true => {}
+            true => {},
         }
         if sup_buf.is_empty() {
             return Err(ExtOrPortError::UnsupportedAuthTypes);
@@ -202,25 +329,52 @@ impl ExtOrPort {
         Ok(sup_buf[0])
     }
     /// Establish a ExtOrPort connection
-    pub async fn connect(&self) -> Result<()> {
-        let cookie_string: CookieString = self.auth_cookie().await?;
+    pub async fn connect(&mut self) -> Result<()> {
         let mut connection = TcpStream::connect(self.addr).await?;
-            let (mut reader, mut writer) = connection.split();
+        let (mut reader, mut writer) = connection.split();
         // When a client (that is to say, a server-side pluggable transport) connects to an Extended ORPort, the server sends:
         // AuthTypes                                   [variable]
         // EndAuthTypes                                [1 octet]
-        loop {
+        'l: loop {
             let mut buf: AuthNegBuf = [0; 256];
             let msg = reader.read(&mut buf).await?;
             if msg == 0 {
-                todo!("we should return diffrent message depends on the state")
+                match self.state {
+                    _ => {
+                        // The sender closed connection and we should panic,
+                        // because if we can not establish a connection,
+                        // it means we can not send data to the tor server
+                        // therefore, we must panic to tell the user that we have not estalbished connection
+                        rec_panic!("The sender closed connection in ExtOrPort");
+                    },
+                }
             }
             match self.state {
                 ExtOrPortState::AuthTypesNegotiation => {
-                    let auth_type = self.auth_types_neg(buf)?;
-                    writer.write_all(&[auth_type as u8]).await?;
+                    match self.auth_types_neg(buf) {
+                        Ok(auth_type) => {
+                            self.state = ExtOrPortState::SafeCookieAuthentication;
+                            writer.write_all(&[auth_type as u8]).await?;
+                            continue 'l;
+                        },
+                        Err(ExtOrPortError::EndAuthTypeUnfound) => {
+                            // Maybe user repeats some auth types
+                            // So we should try to collect again
+                            continue 'l;
+                        },
+                        Err(ExtOrPortError::UnsupportedAuthTypes) => {
+                            writer.write_all(&[0]).await?;
+                            connection.flush().await?;
+                            connection.shutdown().await?;
+                            break 'l;
+                        },
+                        Err(e) => return Err(e.into()),
+                    }
                 },
-                // TODO: else
+                ExtOrPortState::SafeCookieAuthentication => {
+                    self.safe_cookie_authentication(&mut writer, &mut reader)
+                        .await?;
+                },
             }
         }
         Ok(())

@@ -46,11 +46,13 @@
 //! <!-- @@ end lint list
 #[doc(hidden)]
 pub use derive_deftly;
+use derive_deftly::Deftly;
 use thiserror::Error;
 /// Diffrent macros for Error
 mod macros;
 /// Errors which is related with ExtOrPort
-#[derive(Debug, Error, PartialEq)]
+#[derive(Debug, Error, PartialEq, Deftly)]
+#[derive_deftly(OtherFromError)]
 pub enum ExtOrPortError {
     /// The StaticHeader is invalid
     #[error("Invalid StaticHeader it should be \"! Extended ORPort Auth Cookie !\x0a\"")]
@@ -62,6 +64,18 @@ pub enum ExtOrPortError {
     /// EndAuthType Unfound
     #[error("EndAuthTypeUnfound")]
     EndAuthTypeUnfound,
+    /// Server returns an invalid message
+    #[error("Invalid Server Message: {0}")]
+    InvalidServerMsg(String),
+    /// Invalid server hash, client must terminate the connection
+    #[error("Invalid server hash")]
+    InvalidServerHash,
+    /// Server sent a message which indicates that Client hash validation failed
+    #[error("Server sent a message which indicates that Client hash validation failed")]
+    InvalidClientHash,
+    /// Other errors
+    #[error("Error: {0}")]
+    Other(String),
 }
 
 /// Errors which could cause during the Config parsing.
