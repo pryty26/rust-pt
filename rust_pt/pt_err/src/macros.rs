@@ -20,7 +20,7 @@ define_derive_deftly! {
     /// fn foo() -> Ex2 {
     ///     anyhow!("Example").into()
     /// }
-    /// 
+    ///
     /// fn bar() -> Ex2 {
     ///     std::io::Error::other("skibidi").into()
     /// }

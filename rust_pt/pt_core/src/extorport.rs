@@ -3,7 +3,10 @@ use anyhow::{Result, anyhow};
 use derive_deftly::Deftly;
 use getrandom::fill;
 use hmac::{Hmac, KeyInit, Mac};
-use pt_config::{derive_deftly_template_FromDiscriminant, derive_deftly_template_FromString};
+use pt_config::{
+    derive_deftly_template_Builder, derive_deftly_template_FromDiscriminant,
+    derive_deftly_template_FromString,
+};
 use pt_err::ExtOrPortError;
 use pt_tracing::rec_panic;
 use sha2::Sha256;
@@ -28,7 +31,7 @@ pub fn mac_message(key: &[u8], message: &[u8]) -> Result<[u8; 32]> {
     Ok(mac.finalize().into_bytes().into())
 }
 /// Different state for Pt ExtOrPort
-#[derive(Deftly, PartialEq, Eq)]
+#[derive(Copy, Clone, Deftly, PartialEq, Eq)]
 #[derive_deftly(FromDiscriminant, FromString)]
 pub enum ExtOrPortState {
     /// Negetiating the auth type
@@ -38,7 +41,7 @@ pub enum ExtOrPortState {
     // TODO: Add else
 }
 /// Different state for Safe Cookie Authentication
-#[derive(Deftly, PartialEq, Eq)]
+#[derive(Copy, Clone, Deftly, PartialEq, Eq)]
 #[derive_deftly(FromDiscriminant, FromString)]
 pub enum SafeCookieState {
     /// Send Client Nonce
@@ -50,9 +53,16 @@ pub enum SafeCookieState {
     /// Receive the final server Response after sending client hash
     RecvFinalResp = 3,
 }
+///
+#[derive(Clone, Deftly, PartialEq, Eq)]
+pub struct ExtOrPortConnection {}
+
 /// Config for ExtOrPort
+#[derive(Clone, Deftly, PartialEq, Eq)]
+#[derive_deftly(Builder)]
 pub struct ExtOrPort {
     /// Addr of ExtOrPort
+    #[deftly(default = "\"127.0.0.1:8080\".parse::<SocketAddr>().unwrap()")]
     addr: SocketAddr,
     /// We define one authentication type: SAFE_COOKIE.
     /// Its AuthType value is 1.
@@ -68,8 +78,10 @@ pub struct ExtOrPort {
     /// ExtORPortCookieAuthFile <path>
     /// ```
     /// where <path> is a filesystem path.
+    #[deftly(default = "\"./rust\"")]
     auth_cookie_file: PathBuf,
     /// Different state for Pt ExtOrPort
+    #[deftly(default = "ExtOrPortState::AuthTypesNegotiation")]
     state: ExtOrPortState,
 }
 
@@ -297,17 +309,13 @@ impl ExtOrPort {
         for i in 0..buf.len() {
             let auth_type: Option<AuthTypes> = AuthTypes::from_discriminant(buf[i].into()).ok();
             match auth_type {
-                Some(auth_type) if auth_type != AuthTypes::EndAuthType => {
-                    sup_buf.push(auth_type);
-                },
                 Some(auth_type) if auth_type == AuthTypes::EndAuthType => {
                     end_found = true;
                     break;
                 },
-                Some(_) => {
-                    unreachable!(
-                        "unreachable pattern how can a pattern be both != and == EndAuthType"
-                    )
+                Some(auth_type) => {
+                    // We have already made sure that auth_type is not AuthTypes::EndAuthType
+                    sup_buf.push(auth_type);
                 },
                 None => {
                     // Nothing to do here, we do not support that AuthTypes
@@ -364,16 +372,23 @@ impl ExtOrPort {
                         },
                         Err(ExtOrPortError::UnsupportedAuthTypes) => {
                             writer.write_all(&[0]).await?;
-                            connection.flush().await?;
-                            connection.shutdown().await?;
-                            break 'l;
+                            // Server will terminate the connection
+                            // Let's just panic
+                            rec_panic!("UnsupportedAuthTypes");
                         },
                         Err(e) => return Err(e.into()),
                     }
                 },
                 ExtOrPortState::SafeCookieAuthentication => {
-                    self.safe_cookie_authentication(&mut writer, &mut reader)
-                        .await?;
+                    match self
+                        .safe_cookie_authentication(&mut writer, &mut reader)
+                        .await
+                    {
+                        Ok(_) => break 'l,
+                        Err(_) => {
+                            rec_panic!("panic");
+                        },
+                    }
                 },
             }
         }

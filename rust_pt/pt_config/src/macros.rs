@@ -79,6 +79,20 @@ define_derive_deftly! {
             }
         }
     }
+    impl TryFrom<&str> for $ttype {
+        type Error = pt_err::VariantError;
+        fn try_from(value: &str) -> Result<Self, Self::Error> {
+            match value {
+                $(
+                    stringify!($vname) => Ok($vpat),
+                )
+                _ => { return Err(pt_err::VariantError::UnfoundError {
+                    message: "".to_string()
+                });
+            }
+            }
+        }
+    }
     impl std::str::FromStr for $ttype {
         type Err = pt_err::VariantError;
         fn from_str(value: &str) -> Result<Self, Self::Err> {
@@ -210,5 +224,87 @@ define_derive_deftly! {
             },
         }
     }
+    }
+}
+
+define_derive_deftly! {
+    /// Everything field in a structure which is implementing this macro must have:
+    /// #[deftly(default = "...")]
+    /// And if you want String:
+    /// default = "\"example\".to_string()"
+    ///
+    /// Some other:
+    /// #[deftly(default = "8080")]        // i32
+    /// #[deftly(default = "3.14")]        // f64
+    /// #[deftly(default = "true")]        // bool
+    /// #[deftly(default = "42")]          // u32, i64 And so on
+    /// For IpAddr:
+    /// #[deftly(default = "IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1))")]
+    ///
+    /// So just use the normal expression which you would like to use at the code.
+    /// Even:
+    /// { let x = 10; x * 2 }
+    /// Works in this case
+    /// (Oh unfortunatly it's too flexible that makes it seems like some JavaScript)
+    ///
+    /// ```rust
+    /// use derive_deftly::{Deftly};
+    /// use std::net::{IpAddr, Ipv4Addr};
+    /// use pt_config::derive_deftly_template_Builder;
+    /// use std::path::PathBuf;
+    /// #[derive(Deftly, PartialEq, Eq, Clone)]
+    /// #[derive_deftly(Builder)]
+    /// struct Ex {
+    ///     #[deftly(default = "\"example\".to_string()")]
+    ///     name: String,
+    ///     #[deftly(default = "{ let x = 10; x * 2 }")]
+    ///     age: i32,
+    ///     #[deftly(default = "\"./rust\"")]
+    ///     path: PathBuf,
+    ///     #[deftly(default = "IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1))")]
+    ///     ip: IpAddr,
+    ///     #[deftly(default = "{
+    ///          let x = 1 * 5;
+    ///          if x == 5 {
+    ///             let y = x * 2;
+    ///             y
+    ///         } else { 33 }
+    ///     }")]
+    ///     crazy_calculation: i32,
+    /// }
+    ///
+    /// fn main() {
+    ///     let mut ex = Ex::builder()
+    ///     .with_age(18)
+    ///     .with_name("henry".to_string());
+    ///     assert_eq!(ex.crazy_calculation, 10);
+    ///     assert_eq!(ex.age, 18);
+    ///     assert_eq!(ex.name, "henry".to_string());
+    ///     ()
+    /// }
+    ///
+    ///
+    /// ```
+    export Builder for struct:
+
+    impl $ttype {
+        /// Build a default structure
+        pub fn builder() -> Self {
+            Self {
+                $(
+                    ${if fmeta(default) {
+                        $fname: ${fmeta(default) as expr}.into(),
+                    } else {
+                        compile_error!("field {} needs a default value", $fname),
+                    }}
+                )
+            }
+        }
+        $(  /// Set different fields
+            pub fn $< with_ $fname >(mut self, value: $ftype) -> Self {
+                self.$fname = value;
+                self
+            }
+        )
     }
 }
