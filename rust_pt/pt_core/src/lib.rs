@@ -45,7 +45,7 @@
 #![deny(clippy::unwrap_used)]
 //! <!-- @@ end lint list
 
-/// Implementation for Extended ORPort for pluggable transports
-pub mod extorport;
+/// Implementation for Extended and Normal ORPort for pluggable transports
+pub mod orport;
 /// Variables
 pub mod variables;
