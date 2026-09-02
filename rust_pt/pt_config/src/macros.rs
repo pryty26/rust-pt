@@ -289,7 +289,7 @@ define_derive_deftly! {
 
     impl $ttype {
         /// Build a default structure
-        pub fn builder() -> Self {
+        $tvis fn builder() -> Self {
             Self {
                 $(
                     ${if fmeta(default) {
@@ -301,7 +301,7 @@ define_derive_deftly! {
             }
         }
         $(  /// Set different fields
-            pub fn $< with_ $fname >(mut self, value: $ftype) -> Self {
+            $tvis fn $< with_ $fname >(mut self, value: $ftype) -> Self {
                 self.$fname = value;
                 self
             }
