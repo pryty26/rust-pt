@@ -3,7 +3,7 @@
 ///! TODO(rust-pt#1):
 ///! For codes like:
 ///! _ => { return Err(pt_err::VariantError::UnfoundError {
-///!    message: "".to_string()
+///!    message: ...
 ///! });
 ///! We could iterate the enum using $vname/$vindex to tell the user
 ///! what kind of String/Index/else would be valid
@@ -72,8 +72,8 @@ define_derive_deftly! {
                 $(
                     stringify!($vname) => Ok($vpat),
                 )
-                _ => { return Err(pt_err::VariantError::UnfoundError {
-                    message: "".to_string()
+                e => { return Err(pt_err::VariantError::UnfoundError {
+                    message: stringify!(e).to_string()
                 });
             }
             }
@@ -86,8 +86,8 @@ define_derive_deftly! {
                 $(
                     stringify!($vname) => Ok($vpat),
                 )
-                _ => { return Err(pt_err::VariantError::UnfoundError {
-                    message: "".to_string()
+                e => { return Err(pt_err::VariantError::UnfoundError {
+                    message: stringify!(e).to_string()
                 });
             }
             }
@@ -100,8 +100,8 @@ define_derive_deftly! {
                 $(
                     stringify!($vname) => Ok($vpat),
                 )
-                _ => { return Err(pt_err::VariantError::UnfoundError {
-                    message: "".to_string()
+                e => { return Err(pt_err::VariantError::UnfoundError {
+                    message: stringify!(e).to_string()
                 });
             }
             }
@@ -162,8 +162,8 @@ define_derive_deftly! {
                 $(
                     $vindex => Ok($vpat),
                 )
-                _ => { return Err(pt_err::VariantError::UnfoundError {
-                    message: "".to_string()
+                e => { return Err(pt_err::VariantError::UnfoundError {
+                    message: stringify!(e).to_string()
                 });
             }
             }
@@ -173,8 +173,8 @@ define_derive_deftly! {
                 $(
                     $vpat => Ok($vindex),
                 )
-                _ => { return Err(pt_err::VariantError::UnfoundError {
-                    message: "".to_string()
+                e => { return Err(pt_err::VariantError::UnfoundError {
+                    message: stringify!(e).to_string()
                 });
             }
             }
@@ -218,8 +218,8 @@ define_derive_deftly! {
             $(
                 $< discriminant_ $vname > => Ok($vpat),
             )
-            _ => { return Err(pt_err::VariantError::UnfoundError {
-                    message: "".to_string()
+            e => { return Err(pt_err::VariantError::UnfoundError {
+                    message: stringify!(e).to_string()
                 });
             },
         }
