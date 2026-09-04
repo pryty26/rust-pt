@@ -2,7 +2,7 @@
 
 ## Description
 A Rust-based framework for Tor Pluggable Transports, designed for Rust developers. All transport implementations using this framework are modularized under rust-pt/transports/*
-It's pretty surprising that rust-nased PT actually doesn't have any other framework which is still maintaining besides this.
+It's pretty surprising that rust-based PT actually doesn't have any other framework which is still maintaining besides this.
 (ptrs last update is on 2024...So I don't think it would be counted as "still maintaining")
 
 Before reading this project, you may like to read the pt.spec of the Tor [https://spec.torproject.org/pt-spec/index.html]
@@ -97,21 +97,17 @@ Use the built-in continuous integration in GitLab.
 
 
 ## Roadmap
-This project is still under developement, the pt_core and trasports are not done.
+This project is still under developement, but I think, the rust-pt is almost done
+
+I am going to develop a Pt using the rust-pt for testing whether API is suitable
+
+Then
+
+publish pt_tracing, pt_config, pt_err and pt_core to crates.io
+
 
 ## Authors and acknowledgment
 1. pryty26
-
-
-
-
-
-
-### Roadmap
-
-1. publish pt_tracing to crates.io
-2. publish pt_config to crates.io
-
 
 
 
