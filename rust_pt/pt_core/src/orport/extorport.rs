@@ -293,6 +293,7 @@ impl ExtOrPort {
                             break;
                         },
                         _ => {
+                            // Regarding the spec, server should terminate the connection
                             return Err(ExtOrPortError::InvalidClientHash);
                         },
                     }
@@ -302,11 +303,12 @@ impl ExtOrPort {
         Ok(())
     }
     /// Auth types negotiation
-    fn auth_types_neg(&self, buf: AuthNegBuf) -> Result<AuthTypes, ExtOrPortError> {
+    /// len should be the output of reader.read(&mut buf).await?;
+    fn auth_types_neg(&self, buf: AuthNegBuf, len: usize) -> Result<AuthTypes, ExtOrPortError> {
         // supported auth types
         let mut sup_buf = Vec::<AuthTypes>::new();
         let mut end_found = false;
-        for i in 0..buf.len() {
+        for i in 0..len {
             let auth_type: Option<AuthTypes> = AuthTypes::from_discriminant(buf[i].into()).ok();
             match auth_type {
                 Some(auth_type) if auth_type == AuthTypes::EndAuthType => {
@@ -337,7 +339,7 @@ impl ExtOrPort {
         Ok(sup_buf[0])
     }
     /// Establish a ExtOrPort connection
-    pub async fn connect(&mut self) -> Result<()> {
+    pub async fn connect(&mut self) -> Result<TcpStream, ExtOrPortError> {
         let mut connection = TcpStream::connect(self.addr).await?;
         let (mut reader, mut writer) = connection.split();
         // When a client (that is to say, a server-side pluggable transport) connects to an Extended ORPort, the server sends:
@@ -359,7 +361,7 @@ impl ExtOrPort {
             }
             match self.state {
                 ExtOrPortState::AuthTypesNegotiation => {
-                    match self.auth_types_neg(buf) {
+                    match self.auth_types_neg(buf, msg) {
                         Ok(auth_type) => {
                             self.state = ExtOrPortState::SafeCookieAuthentication;
                             writer.write_all(&[auth_type as u8]).await?;
@@ -372,7 +374,8 @@ impl ExtOrPort {
                         },
                         Err(ExtOrPortError::UnsupportedAuthTypes) => {
                             writer.write_all(&[0]).await?;
-                            // Server will terminate the connection
+                            // Server will terminate the connection.
+                            // If we cannot establish connection we cannot forward traffics
                             // Let's just panic
                             rec_panic!("UnsupportedAuthTypes");
                         },
@@ -380,18 +383,12 @@ impl ExtOrPort {
                     }
                 },
                 ExtOrPortState::SafeCookieAuthentication => {
-                    match self
-                        .safe_cookie_authentication(&mut writer, &mut reader)
-                        .await
-                    {
-                        Ok(_) => break 'l,
-                        Err(_) => {
-                            rec_panic!("panic");
-                        },
-                    }
+                    self.safe_cookie_authentication(&mut writer, &mut reader)
+                        .await?;
+                    break 'l;
                 },
             }
         }
-        Ok(())
+        Ok(connection)
     }
 }
