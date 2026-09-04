@@ -61,6 +61,11 @@ pub enum ExtOrPortError {
     /// We have not found the supported auth types
     #[error("Unsupported auth types")]
     UnsupportedAuthTypes,
+    /// Invalid USERADDR
+    /// Used for [0x0001] USERADDR: an address:port string that represents the
+    /// client's address.
+    #[error("Invalid USERADDR: {0}")]
+    InvalidUserAddr(String),
     /// EndAuthType Unfound
     #[error("EndAuthTypeUnfound")]
     EndAuthTypeUnfound,

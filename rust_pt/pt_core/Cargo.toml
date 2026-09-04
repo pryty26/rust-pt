@@ -16,3 +16,4 @@ anyhow = { workspace = true }
 hmac = { workspace = true }
 sha2 = { workspace = true }
 getrandom = { workspace = true }
+async-trait = "0.1.92"
