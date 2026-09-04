@@ -45,5 +45,5 @@ pub trait ClientExtOrPortProtocol {
     async fn user_addr(stream: &mut TcpStream, client_addr: String) -> Result<(), ExtOrPortError>;
     ///      [0x0002] TRANSPORT: a string of the name of the pluggable
     ///        transport currently in effect on the connection.
-    async fn transoprt(stream: &mut TcpStream, pt_name: String) -> Result<(), ExtOrPortError>;
+    async fn transport(stream: &mut TcpStream, pt_name: String) -> Result<(), ExtOrPortError>;
 }

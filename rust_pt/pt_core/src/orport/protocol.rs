@@ -16,7 +16,7 @@ impl ClientExtOrPortProtocol for ExtOrPort {
         stream.write_all(&msg).await?;
         Ok(())
     }
-    async fn transoprt(stream: &mut TcpStream, pt_name: String) -> Result<(), ExtOrPortError> {
+    async fn transport(stream: &mut TcpStream, pt_name: String) -> Result<(), ExtOrPortError> {
         let msg = 0x0001_u16.to_be_bytes();
         stream.write_all(&msg).await?;
         stream.write_all(&pt_name.as_bytes()).await?;
