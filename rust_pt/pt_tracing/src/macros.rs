@@ -1,3 +1,8 @@
+// File: rust_pt\pt_tracing\src\macros.rs
+// Directory: rust_pt\pt_tracing\src
+// Filename: macros.rs
+//======================================================================
+
 /// use PtTracing::error($msg) to record and then panic
 /// Will generate:
 /// <$crate::PtTracing as $crate::traits::TorPtCommunicator>::error($msg).unwrap();

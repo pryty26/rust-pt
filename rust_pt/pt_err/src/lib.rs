@@ -1,3 +1,8 @@
+// File: rust_pt\pt_err\src\lib.rs
+// Directory: rust_pt\pt_err\src
+// Filename: lib.rs
+//======================================================================
+
 // @@ begin lint list
 #![allow(renamed_and_removed_lints)] // @@REMOVE_WHEN(ci_arti_stable)
 #![allow(unknown_lints)] // @@REMOVE_WHEN(ci_arti_nightly)
@@ -79,12 +84,14 @@ pub enum ExtOrPortError {
     #[error("Server sent a message which indicates that Client hash validation failed")]
     InvalidClientHash,
     /// Other errors
+    /// Can be converted from anyhow::Error
     #[error("Error: {0}")]
     Other(String),
 }
 
 /// Errors which could cause during the Config parsing.
-#[derive(Debug, Error, PartialEq)]
+#[derive(Debug, Error, PartialEq, Deftly)]
+#[derive_deftly(OtherFromError)]
 pub enum ConfigError {
     /// Configuration error with additional context.
     /// # Example
@@ -108,6 +115,10 @@ pub enum ConfigError {
         /// Additional context of the Error
         message: String,
     },
+    /// Other errors
+    /// Can be converted from anyhow::Error
+    #[error("Error: {0}")]
+    Other(String),
 }
 /// Errors which could cause by variant
 #[derive(Debug, Error, PartialEq)]

@@ -1,3 +1,8 @@
+// File: rust_pt\pt_tracing\src\lib.rs
+// Directory: rust_pt\pt_tracing\src
+// Filename: lib.rs
+//======================================================================
+
 // @@ begin lint list
 #![allow(renamed_and_removed_lints)] // @@REMOVE_WHEN(ci_arti_stable)
 #![allow(unknown_lints)] // @@REMOVE_WHEN(ci_arti_nightly)

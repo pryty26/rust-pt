@@ -1,3 +1,8 @@
+// File: rust_pt\pt_err\src\macros.rs
+// Directory: rust_pt\pt_err\src
+// Filename: macros.rs
+//======================================================================
+
 use derive_deftly::define_derive_deftly;
 define_derive_deftly! {
     /// Implement From for $ttype::Other(...)

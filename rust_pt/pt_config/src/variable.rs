@@ -1,3 +1,8 @@
+// File: rust_pt\pt_config\src\variable.rs
+// Directory: rust_pt\pt_config\src
+// Filename: variable.rs
+//======================================================================
+
 #![allow(missing_docs)]
 
 pub const CURRENT_TRANSPORT_VER: [&str; 1] = ["1"];

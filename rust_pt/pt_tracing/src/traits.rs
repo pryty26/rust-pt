@@ -1,3 +1,8 @@
+// File: rust_pt\pt_tracing\src\traits.rs
+// Directory: rust_pt\pt_tracing\src
+// Filename: traits.rs
+//======================================================================
+
 /// Print a debug message, conform with Tor-Pt Spec
 pub trait TorPtCommunicator {
     /// Output for debug
