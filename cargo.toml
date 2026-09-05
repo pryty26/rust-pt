@@ -1,12 +1,25 @@
 [workspace]
-members = ["transports/*", "rust_pt/*"]
+members = [
+    "rust_pt/pt_err",
+    "rust_pt/pt_tracing",
+    "rust_pt/pt_config",
+    "rust_pt/pt_core",
+    "transports/reality-pt",
+    ]
 resolver = "2"
 [workspace.package]
 name = "rust-pt"
-version = "0.1.0"
+version = "0.0.0-alpha.1"
 edition = "2024"
+license = "Apache-2.0"   
+repository = "https://gitlab.torproject.org/pryty26/rust-pt"
 
 [workspace.dependencies]
+pt_err = { version = "0.0.0-alpha.1" }
+pt_core = { version = "0.0.0-alpha.1" }
+pt_config = { version = "0.0.0-alpha.1" }
+pt_tracing = { version = "0.0.0-alpha.1" }
+
 anyhow = "1.0.104"
 zip = "8.6.0"
 derive-deftly = "1.11.5"
