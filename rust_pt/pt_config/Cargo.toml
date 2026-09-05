@@ -10,12 +10,20 @@ description = "A library for Rust-Based Pt config parsing"
 anyhow = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
-toml = { workspace = true }
 derive-deftly = { workspace = true }
-# All errors
-pt_err = { workspace = true, path = "../pt_err" }
+
+## All errors
+# Local development only
+pt_err = { path = "../pt_err" }
+# Use this when publishing to crates.io
+# pt_err = { workspace = true }
+
 # logs
-pt_tracing = { workspace = true, path = "../pt_tracing" }
+# Local development only
+pt_tracing = { path = "../pt_tracing" }
+# Use this when publishing to crates.io
+# pt_tracing = { workspace = true }
+
 once_cell = { workspace = true }
 dotenvy = { workspace = true }
 url = { workspace = true }

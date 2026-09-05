@@ -1,3 +1,8 @@
+// File: rust_pt\pt_core\src\variables.rs
+// Directory: rust_pt\pt_core\src
+// Filename: variables.rs
+//======================================================================
+
 #![allow(nonstandard_style)]
 /// Cookie-file format
 /// ```text

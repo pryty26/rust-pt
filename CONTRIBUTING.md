@@ -37,14 +37,24 @@ working Git installation to fetch the code.
 1.1 Before creating an issue, please check whether an appropriate label exists for it.
 
 2. Please do not use AI to generate the code which you are submitting for inclusion of the work!
-   Of course, checking or searching grammar or translating docs is always fine. ('•ω•')
-   We anticipate that all contributors are professional programmers who fully understand the code, 
-   instead of professional Copy-Paste programmer
+   Of course, checking or searching grammar (irrelevant what programming or natural language), 
+   inquire AI for helping teach you install or doing something, 
+   generating scripts (Which is not Rust and only for some specific purpose) 
+   or
+   translating docs is always fine. ('•ω•')
+   We anticipate that all contributors are professional programmers who fully understand the code.
+   And trust me, you write better code than AI, once you've learned the syntax.
+   I know learning syntax could be hard, that's why I encourage that people learn syntax using AI.
+   I use AI for generating scripts and checking syntex too. (Yeah I already forgot how can I write python)
+
 
 ## code style we prefer
 
 1. In complicated situation we would like to use *match* instead of *if* 
    Because it's easier for reading
+
+2. Remember run "cargo fmt --all" 
+  before pushing
 
 
 ## Where are some good places to start hacking?

@@ -1,3 +1,8 @@
+// File: rust_pt\pt_config\src\configs\core.rs
+// Directory: rust_pt\pt_config\src\configs
+// Filename: core.rs
+//======================================================================
+
 use crate::configs::configs::{ClientKey, CommonKey, ServerKey};
 use pt_tracing::rec_panic;
 use serde::{Deserialize, Serialize};

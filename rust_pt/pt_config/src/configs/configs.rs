@@ -1,8 +1,14 @@
+// File: rust_pt\pt_config\src\configs\configs.rs
+// Directory: rust_pt\pt_config\src\configs
+// Filename: configs.rs
+//======================================================================
+
 #![allow(non_snake_case)]
 use anyhow::Result;
 use derive_deftly::Deftly;
 use pt_err::ConfigError;
 use pt_err::derive_deftly_template_DefineVariantError;
+use pt_tracing::prelude::*;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::convert::TryFrom;
@@ -433,7 +439,14 @@ impl TryFrom<RawServerKey> for ServerKey {
                 HashMap::from([(name.to_string(), addr)])
             })
             .collect();
-
+        // Pluggable transport proxies SHOULD issue a warning
+        // if they are instructed to connect to a non-localhost Extended ORPort.
+        if !raw.TOR_PT_EXTENDED_SERVER_PORT.ip().is_loopback() {
+            PtTracing::warn(&format!(
+                "Extended ORPort is not on localhost: {}",
+                raw.TOR_PT_EXTENDED_SERVER_PORT
+            ))?;
+        }
         Ok(ServerKey {
             TOR_PT_SERVER_TRANSPORTS: raw.TOR_PT_SERVER_TRANSPORTS,
             TOR_PT_SERVER_TRANSPORT_OPTIONS: TOR_PT_SERVER_TRANSPORT_OPTIONS,

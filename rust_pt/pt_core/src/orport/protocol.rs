@@ -1,3 +1,8 @@
+// File: rust_pt\pt_core\src\orport\protocol.rs
+// Directory: rust_pt\pt_core\src\orport
+// Filename: protocol.rs
+//======================================================================
+
 use super::extorport::ExtOrPort;
 use super::traits::ClientExtOrPortProtocol;
 use async_trait::async_trait;
@@ -16,12 +21,6 @@ impl ClientExtOrPortProtocol for ExtOrPort {
         stream.write_all(&msg).await?;
         Ok(())
     }
-    async fn transport(stream: &mut TcpStream, pt_name: String) -> Result<(), ExtOrPortError> {
-        let msg = 0x0001_u16.to_be_bytes();
-        stream.write_all(&msg).await?;
-        stream.write_all(&pt_name.as_bytes()).await?;
-        Ok(())
-    }
     async fn user_addr(stream: &mut TcpStream, client_addr: String) -> Result<(), ExtOrPortError> {
         // An ASCII string holding the TCP/IP address of the client of the
         // pluggable transport proxy. A Tor bridge SHOULD use that address to
@@ -31,9 +30,15 @@ impl ClientExtOrPortProtocol for ExtOrPort {
         // (Current Tor versions may accept other formats, but this is a bug: transports MUST NOT send them.)
         SocketAddr::from_str(&client_addr)
             .map_err(|e| ExtOrPortError::InvalidUserAddr(e.to_string()))?;
-        let msg = 0x0002_u16.to_be_bytes();
+        let msg = 0x0001_u16.to_be_bytes();
         stream.write_all(&msg).await?;
         stream.write_all(client_addr.as_bytes()).await?;
+        Ok(())
+    }
+    async fn transport(stream: &mut TcpStream, pt_name: String) -> Result<(), ExtOrPortError> {
+        let msg = 0x0002_u16.to_be_bytes();
+        stream.write_all(&msg).await?;
+        stream.write_all(&pt_name.as_bytes()).await?;
         Ok(())
     }
 }

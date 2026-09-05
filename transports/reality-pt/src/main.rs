@@ -1,3 +1,8 @@
+// File: transports\reality-pt\src\main.rs
+// Directory: transports\reality-pt\src
+// Filename: main.rs
+//======================================================================
+
 // @@ begin lint list
 #![allow(renamed_and_removed_lints)] // @@REMOVE_WHEN(ci_arti_stable)
 #![allow(unknown_lints)] // @@REMOVE_WHEN(ci_arti_nightly)

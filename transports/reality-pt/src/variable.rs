@@ -1,3 +1,8 @@
+// File: transports\reality-pt\src\variable.rs
+// Directory: transports\reality-pt\src
+// Filename: variable.rs
+//======================================================================
+
 #![allow(missing_docs)]
 
 // macOS
