@@ -71,7 +71,7 @@ and to seek, receive and impart information and ideas through any media and rega
 
 
 ## License
-Idk...
+Licensed under the Apache License, Version 2.0 (the "License");
 
 ## Project status
 Developing!
