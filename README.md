@@ -101,11 +101,6 @@ This project is still under developement, but I think, the rust-pt is almost don
 
 I am going to develop a Pt using the rust-pt for testing whether API is suitable
 
-Then
-
-publish pt_tracing, pt_config, pt_err and pt_core to crates.io
-
-
 ## Authors and acknowledgment
 1. pryty26
 

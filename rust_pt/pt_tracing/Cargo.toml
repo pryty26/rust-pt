@@ -1,9 +1,11 @@
 [package]
 name = "pt_tracing"
-version = "0.1.0"
-edition = "2024"
-
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "A library for Rust-Based Pt Logging"
 [dependencies]
-tracing = {workspace = true}
-tracing-subscriber = {workspace = true}
-anyhow = {workspace = true}
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+anyhow = { workspace = true }
