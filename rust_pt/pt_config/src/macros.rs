@@ -1,3 +1,8 @@
+// File: rust_pt\pt_config\src\macros.rs
+// Directory: rust_pt\pt_config\src
+// Filename: macros.rs
+//======================================================================
+
 ///! For grammar of derive-deftly:
 ///! See: https://docs.rs/derive-deftly/1.11.5/derive_deftly/doc_reference/index.html
 ///! TODO(rust-pt#1):
@@ -73,7 +78,7 @@ define_derive_deftly! {
                     stringify!($vname) => Ok($vpat),
                 )
                 e => { return Err(pt_err::VariantError::UnfoundError {
-                    message: stringify!(e).to_string()
+                    message: e.to_string()
                 });
             }
             }
@@ -87,7 +92,7 @@ define_derive_deftly! {
                     stringify!($vname) => Ok($vpat),
                 )
                 e => { return Err(pt_err::VariantError::UnfoundError {
-                    message: stringify!(e).to_string()
+                    message: e.to_string()
                 });
             }
             }
@@ -101,7 +106,7 @@ define_derive_deftly! {
                     stringify!($vname) => Ok($vpat),
                 )
                 e => { return Err(pt_err::VariantError::UnfoundError {
-                    message: stringify!(e).to_string()
+                    message: e.to_string()
                 });
             }
             }
@@ -163,7 +168,7 @@ define_derive_deftly! {
                     $vindex => Ok($vpat),
                 )
                 e => { return Err(pt_err::VariantError::UnfoundError {
-                    message: stringify!(e).to_string()
+                    message: e.to_string()
                 });
             }
             }
@@ -174,7 +179,7 @@ define_derive_deftly! {
                     $vpat => Ok($vindex),
                 )
                 e => { return Err(pt_err::VariantError::UnfoundError {
-                    message: stringify!(e).to_string()
+                    message: e.to_string()
                 });
             }
             }
@@ -219,7 +224,7 @@ define_derive_deftly! {
                 $< discriminant_ $vname > => Ok($vpat),
             )
             e => { return Err(pt_err::VariantError::UnfoundError {
-                    message: stringify!(e).to_string()
+                    message: e.to_string()
                 });
             },
         }
