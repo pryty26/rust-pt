@@ -123,3 +123,45 @@ Additionally, could my code live in the tpo/core/anti-censorship repo?
 meskio:
 yes, there is a PTs written in rust, I did linked it in an email I replied to you, maybe you didn't received it: https://lists.torproject.org/mailman3/hyperkitty/list/tor-dev@lists.torproject.org/thread/HDZA3XMVUOQHLSZBYZRQZQHEO572F5KJ/
 on the code hosting, let's start with you selfhosting it, once you have something working we'll review it and discuss where to host it
+
+## FIle tree
+# This may be outdate (last update: 2026.9.6)
+
+
+```
+rust-pt
+├── pt_config
+│   ├── src
+│   │   ├── configs
+│   │   │   ├── configs.rs
+│   │   │   └── core.rs
+│   │   ├── configs.rs
+│   │   ├── lib.rs
+│   │   ├── macros.rs
+│   │   └── variable.rs
+│   └── Cargo.toml
+├── pt_core
+│   ├── src
+│   │   ├── orport
+│   │   │   ├── extorport-spec.md
+│   │   │   ├── extorport.rs
+│   │   │   ├── protocol.rs
+│   │   │   └── traits.rs
+│   │   ├── extorport.md
+│   │   ├── lib.rs
+│   │   ├── orport.rs
+│   │   └── variables.rs
+│   └── Cargo.toml
+├── pt_err
+│   ├── src
+│   │   ├── lib.rs
+│   │   └── macros.rs
+│   └── Cargo.toml
+├── pt_tracing
+│   ├── src
+│   │   ├── lib.rs
+│   │   ├── macros.rs
+│   │   └── traits.rs
+│   └── Cargo.toml
+└── pt-architecture.md
+```
