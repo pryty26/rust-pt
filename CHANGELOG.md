@@ -1,4 +1,4 @@
-## [v0.0.0-alpha.2]
+## [v0.0.0-alpha.2] (Including changes in v0.0.0-alpha.1)
 
 ### 🚀 Features
 
