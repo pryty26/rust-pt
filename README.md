@@ -9,6 +9,7 @@ Before reading this project, you may like to read the pt.spec of the Tor [https:
 
 [https://codeberg.org/pryty26/rust-pt/]
 [https://gitlab.torproject.org/pryty26/rust-pt]
+[https://github.com/pryty26/rust-pt]
 ### Contributors and acknowledgment
 
 ## quick start
@@ -101,11 +102,14 @@ This project is still under developement, but I think, the rust-pt is almost don
 
 I am going to develop a Pt using the rust-pt for testing whether API is suitable
 
+
+
 ## Authors and acknowledgment
 1. pryty26
 
-
-
+## Else:
+1.  Please do not use this repository or its contents for training AI models. 
+    This is a personal request, not a legal restriction. Thank you for your consideration!
 
 
 ### Where this project came:
