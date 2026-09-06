@@ -10,11 +10,11 @@ keywords.workspace = true
 categories.workspace = true
 [dependencies]
 # All errors
-pt_err = { workspace = true, path = "../pt_err" }
+pt_err = { workspace = true }
 # logs
-pt_tracing = { workspace = true, path = "../pt_tracing" }
+pt_tracing = { workspace = true }
 # Configuration parsing
-pt_config = { workspace = true, path = "../pt_config"}
+pt_config = { workspace = true }
 derive-deftly = { workspace = true }
 tokio = { workspace = true }
 anyhow = { workspace = true }
