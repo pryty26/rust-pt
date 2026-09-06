@@ -5,6 +5,9 @@ edition.workspace = true
 license.workspace = true
 repository.workspace = true
 description = "A library for Rust-Based Pt Logging"
+readme = "README.md"
+keywords.workspace = true
+categories.workspace = true
 [dependencies]
 tracing = { workspace = true }
 tracing-subscriber = { workspace = true }

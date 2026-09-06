@@ -48,6 +48,7 @@
 #![deny(clippy::unnecessary_wraps)]
 #![deny(clippy::unused_async)]
 #![deny(clippy::unwrap_used)]
+#![deny(clippy::pedantic)]  // This is not in Arti
 //! <!-- @@ end lint list
 use anyhow::Result;
 use std::fs::{File, create_dir_all};
@@ -61,6 +62,8 @@ pub mod download;
 pub use download::get_xray;
 /// Creates a file at the specified path,
 /// creating any necessary parent directories.
+/// # Errors
+/// This function returns an error if `create_dir_all` fails or if `File::create` fails.
 pub fn create_all_path(path: &PathBuf) -> Result<File> {
     if let Some(parent) = path.parent() {
         create_dir_all(parent)?;
@@ -69,27 +72,41 @@ pub fn create_all_path(path: &PathBuf) -> Result<File> {
 }
 
 /// Creates a pair of x25519 keys and writes them to the specified files.
+///
+/// # Errors
+/// This function returns an error if the xray command fails to execute,
+/// or if the output cannot be parsed as valid UTF-8.
+///
+/// # Panics
+/// This function will panic if the xray command cannot be spawned (e.g., xray not found),
+/// or if the output is missing expected key lines.
 pub fn create_keys(
     private_key_path: Option<&PathBuf>,
     public_key_path: Option<&PathBuf>,
 ) -> Result<()> {
     let output = match Command::new(XRAY_CMD).arg("x25519").output() {
         Ok(output) => {
-            if !output.status.success() {
-                panic!(
-                    "xray exited with error: {}",
-                    output.stderr.iter().map(|&c| c as char).collect::<String>()
-                );
-            }
+            assert!(
+                output.status.success(),
+                "xray exited with error: {}",
+                output.stderr.iter().map(|&c| c as char).collect::<String>()
+            );
             output
         },
-        Err(_) => panic!("failed to execute xray"),
+        Err(e) => panic!("failed to execute xray: {e}"),
     };
-    let output_str = String::from_utf8(output.stdout).unwrap();
-    let lines: Vec<&str> = output_str.trim().split('\n').collect();
+    let output_str =
+        String::from_utf8(output.stdout).expect("Failed to parse xray output as UTF-8");
+    let lines: Vec<&str> = output_str.trim().lines().collect();
 
-    let private_key = lines[0].split(": ").nth(1).unwrap();
-    let public_key = lines[1].split(": ").nth(1).unwrap();
+    let private_key = lines[0]
+        .split(": ")
+        .nth(1)
+        .expect("Missing private key in xray output");
+    let public_key = lines[1]
+        .split(": ")
+        .nth(1)
+        .expect("Missing public key in xray output");
 
     if let Some(path) = private_key_path {
         let mut file = create_all_path(path).expect("Failed to create file");

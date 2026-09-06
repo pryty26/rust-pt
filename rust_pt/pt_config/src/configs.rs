@@ -3,7 +3,7 @@
 // Filename: configs.rs
 //======================================================================
 
-/// Configs
-pub mod configs;
 /// Core
 pub mod core;
+/// Configs
+pub mod keys;

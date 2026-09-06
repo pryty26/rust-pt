@@ -5,7 +5,9 @@ edition.workspace = true
 license.workspace = true
 repository.workspace = true
 description = "A library for Rust-Based Pt development"
-
+readme = "README.md"
+keywords.workspace = true
+categories.workspace = true
 [dependencies]
 # All errors
 pt_err = { workspace = true, path = "../pt_err" }

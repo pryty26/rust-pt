@@ -24,27 +24,36 @@ fn unzip(file: PathBuf) -> Result<PathBuf> {
     Ok(exe_path)
 }
 /// Download the xray from the github
+///
+/// # Errors
+/// This function returns an error if:
+/// - The `curl` command fails to execute
+/// - The downloaded zip file cannot be unzipped
+/// - The zip file cannot be removed after extraction
+///
+/// # Panics
+/// This function will panic if:
+/// - The `curl` command cannot be spawned (e.g., curl not installed)
+/// - The `curl` command exits with a non-zero status code
 pub fn get_xray() -> Result<()> {
     match Command::new("curl")
         .arg("-L")
         .arg(format!(
-            "https://github.com/XTLS/Xray-core/releases/latest/download/{}",
-            XRAY_FILE_NAME
+            "https://github.com/XTLS/Xray-core/releases/latest/download/{XRAY_FILE_NAME}"
         ))
         .arg("-o")
         .arg("xray.zip")
         .output()
     {
         Ok(output) => {
-            if !output.status.success() {
-                panic!(
-                    "xray exited with error: {}",
-                    output.stderr.iter().map(|&c| c as char).collect::<String>()
-                );
-            }
+            assert!(
+                output.status.success(),
+                "xray exited with error: {}",
+                output.stderr.iter().map(|&c| c as char).collect::<String>()
+            );
         },
-        Err(_) => panic!("failed to execute xray"),
-    };
+        Err(e) => panic!("failed to execute xray {e}"),
+    }
     let _file = unzip(PathBuf::from("xray.zip"))?;
     fs::remove_file("xray.zip")?;
 
