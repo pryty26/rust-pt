@@ -13,7 +13,9 @@ version = "0.0.0-alpha.2"
 edition = "2024"
 license = "Apache-2.0"   
 repository = "https://gitlab.torproject.org/pryty26/rust-pt"
-
+readme = "README.md" 
+keywords = ["tor", "proxy", "pluggable transport"]
+categories = ["network-programming"]
 [workspace.dependencies]
 pt_err = { version = "0.0.0-alpha.2" }
 pt_core = { version = "0.0.0-alpha.2" }

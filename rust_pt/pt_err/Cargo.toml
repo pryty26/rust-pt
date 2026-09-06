@@ -5,7 +5,9 @@ edition.workspace = true
 license.workspace = true
 repository.workspace = true
 description = "A library for Rust-Based Pt Errors"
-
+readme = "README.md"
+keywords.workspace = true
+categories.workspace = true
 [dependencies]
 thiserror = { workspace = true }
 derive-deftly = { workspace =  true }

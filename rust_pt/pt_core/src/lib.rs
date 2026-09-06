@@ -48,9 +48,10 @@
 #![deny(clippy::unnecessary_wraps)]
 #![deny(clippy::unused_async)]
 #![deny(clippy::unwrap_used)]
+#![deny(clippy::pedantic)]  // This is not in Arti
 //! <!-- @@ end lint list
 
-/// Implementation for Extended and Normal ORPort for pluggable transports
+/// Implementation for Extended and Normal `ORPort` for pluggable transports
 pub mod orport;
 /// Variables
 pub mod variables;

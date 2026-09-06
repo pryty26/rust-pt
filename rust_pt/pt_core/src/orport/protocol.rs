@@ -44,7 +44,7 @@ impl ClientExtOrPortProtocol for ExtOrPort {
         let body_len = pt_name.len().to_be_bytes();
         stream.write_all(&msg).await?;
         stream.write_all(&body_len).await?;
-        stream.write_all(&pt_name.as_bytes()).await?;
+        stream.write_all(pt_name.as_bytes()).await?;
         Ok(())
     }
 }

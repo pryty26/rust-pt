@@ -65,6 +65,7 @@ WANT_LINTS = """
 #![deny(clippy::unnecessary_wraps)]
 #![deny(clippy::unused_async)]
 #![deny(clippy::unwrap_used)]
+#![deny(clippy::pedantic)]  // This is not in Arti
 """
 
 # ---------- list of lints to apply or disapply *in tests* ----------
@@ -82,6 +83,7 @@ TEST_LINTS = """
 #![allow(clippy::useless_vec)]
 #![allow(clippy::needless_pass_by_value)]
 #![allow(clippy::string_slice)] // See arti#2571
+#![allow(clippy::pedantic)]
 """
 
 # ---------- list of lints to apply or disapply *in examples* ----------

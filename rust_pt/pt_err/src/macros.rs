@@ -5,7 +5,7 @@
 
 use derive_deftly::define_derive_deftly;
 define_derive_deftly! {
-    /// Implement From for $ttype::Other(...)
+    /// Implement From for $`ttype::Other`(...)
     /// Errors which is using that must have a:
     /// #[error(...)]
     /// Other(String)
@@ -72,10 +72,10 @@ define_derive_deftly! {
     /// }
     /// ```
     /// Would derive:
-    /// pub enum Ex2ConfigError {
-    ///     ConfigError { message: String },
-    ///     InvalidA { message: String },
-    ///     AUnfound { message: String },
+    /// pub enum `Ex2ConfigError` {
+    ///     `ConfigError` { message: String },
+    ///     `InvalidA` { message: String },
+    ///     `AUnfound` { message: String },
     /// }
     export DefineVariantError:
     ${if is_enum {
@@ -101,6 +101,7 @@ define_derive_deftly! {
     } is_struct {
         /// Error for new structure
         #[derive(Debug, thiserror::Error, PartialEq)]
+        #[non_exhaustive]
         pub enum $<$tname ConfigError> {
             /// Some not specified error
             #[error("Config Error:{message}")]

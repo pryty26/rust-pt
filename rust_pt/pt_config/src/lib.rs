@@ -48,6 +48,7 @@
 #![deny(clippy::unnecessary_wraps)]
 #![deny(clippy::unused_async)]
 #![deny(clippy::unwrap_used)]
+#![deny(clippy::pedantic)]  // This is not in Arti
 //! <!-- @@ end lint list
 #[doc(hidden)]
 pub use derive_deftly;
@@ -56,10 +57,9 @@ pub mod configs;
 /// Diffrent macros which could be helpful
 pub mod macros;
 use dotenvy::dotenv;
-use once_cell::sync::Lazy;
 /// variables
 pub mod variable;
 /// Init the .env
-pub static ENV_LOADED: Lazy<()> = Lazy::new(|| {
+pub static ENV_LOADED: std::sync::LazyLock<()> = std::sync::LazyLock::new(|| {
     let _ = dotenv().ok();
 });

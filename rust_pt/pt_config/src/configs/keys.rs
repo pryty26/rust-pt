@@ -1,9 +1,13 @@
-// File: rust_pt\pt_config\src\configs\configs.rs
+// File: rust_pt\pt_config\src\configs\keys.rs
 // Directory: rust_pt\pt_config\src\configs
-// Filename: configs.rs
+// Filename: keys.rs
 //======================================================================
 
+//! Some structure are marked as exhausive
+//! since most of the structure follows Tor-Spec
+//! That's why they will not change easily
 #![allow(non_snake_case)]
+#![allow(clippy::struct_field_names)]
 use anyhow::Result;
 use derive_deftly::Deftly;
 use pt_err::ConfigError;
@@ -12,6 +16,7 @@ use pt_tracing::prelude::*;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::convert::TryFrom;
+use std::fmt::Write;
 use std::net::{Ipv4Addr, Ipv6Addr, SocketAddr};
 use std::path::PathBuf;
 use std::str::FromStr;
@@ -20,32 +25,32 @@ use url::Url;
 /// So using String is acceptable, since we won't validate it.
 type PtTransportName = String;
 use crate::variable::{CURRENT_TRANSPORT_VER, SCHEMES};
-///! Currently the most of the Errors are ConfigError::InvalidConfigErr{...}
-///! TODO: Maybe Adding some diffrent Error would be better?
-///! But I think developing more feature is more important now.
 
-/// RawCommonKey is used to validate that the config is valid
-/// #[allow(unused)] is fine in this situation,
-/// since this is only to validate the config
+/// `RawCommonKey` is used to validate that the config is valid
 #[derive(Debug, Deserialize)]
 pub(crate) struct RawCommonKey {
     #[serde(rename = "tor_pt_managed_transport_ver")]
+    /// For field documentation, see the corresponding fields in [`CommonKey`].
     TOR_PT_MANAGED_TRANSPORT_VER: String,
 
     #[serde(rename = "tor_pt_state_location")]
+    /// For field documentation, see the corresponding fields in [`CommonKey`].
     TOR_PT_STATE_LOCATION: PathBuf,
 
     #[serde(rename = "tor_pt_exit_on_stdin_close")]
+    /// For field documentation, see the corresponding fields in [`CommonKey`].
     TOR_PT_EXIT_ON_STDIN_CLOSE: i8,
 
     #[serde(rename = "tor_pt_outbound_bind_address_v4")]
+    /// For field documentation, see the corresponding fields in [`CommonKey`].
     TOR_PT_OUTBOUND_BIND_ADDRESS_V4: Option<Ipv4Addr>,
 
     #[serde(rename = "tor_pt_outbound_bind_address_v6")]
+    /// For field documentation, see the corresponding fields in [`CommonKey`].
     TOR_PT_OUTBOUND_BIND_ADDRESS_V6: Option<Ipv6Addr>,
 }
 /// Splits `s` by commas and collects the results into a `Vec<String>`.
-pub fn separate_with(s: String, comma: &str) -> Vec<String> {
+pub fn separate_with(s: &str, comma: &str) -> Vec<String> {
     s.split(comma)
         .map(str::trim)
         .filter(|s| !s.is_empty())
@@ -58,35 +63,36 @@ pub fn separate_with(s: String, comma: &str) -> Vec<String> {
 #[derive(Debug, Serialize, Deserialize, Deftly)]
 #[derive_deftly(DefineVariantError)]
 #[serde(try_from = "RawCommonKey")]
+#[allow(clippy::exhaustive_structs)]
 pub struct CommonKey {
     /// Comma-separated list of Pluggable Transport specification versions
     /// supported by the parent process.
     /// Example:
-    /// TOR_PT_MANAGED_TRANSPORT_VER=1,1a,2b,radish_is_a_valid_ver
+    /// `TOR_PT_MANAGED_TRANSPORT_VER=1,1a,2b,radish_is_a_valid_ver`
     pub TOR_PT_MANAGED_TRANSPORT_VER: Vec<String>,
 
     /// Directory where the Pluggable Transport may persist state.
     /// Example:
-    /// TOR_PT_STATE_LOCATION=/var/lib/tor/pt_state/
+    /// `TOR_PT_STATE_LOCATION=/var/lib/tor/pt_state`/
     pub TOR_PT_STATE_LOCATION: PathBuf,
 
     /// Whether the PT should gracefully exit when stdin is closed.
     /// Example:
-    /// TOR_PT_EXIT_ON_STDIN_CLOSE=1
+    /// `TOR_PT_EXIT_ON_STDIN_CLOSE=1`
     pub TOR_PT_EXIT_ON_STDIN_CLOSE: i8,
 
     /// Optional IPv4 source address for outbound connections.
     ///
     /// If unset, the system default source address is used.
     /// Example:
-    /// TOR_PT_OUTBOUND_BIND_ADDRESS_V4=203.0.113.4
+    /// `TOR_PT_OUTBOUND_BIND_ADDRESS_V4=203.0.113.4`
     pub TOR_PT_OUTBOUND_BIND_ADDRESS_V4: Ipv4Addr,
 
     /// Optional IPv6 source address for outbound connections.
     ///
     /// If unset, the system default source address is used.
     /// Example:
-    /// TOR_PT_OUTBOUND_BIND_ADDRESS_V6=[2001:db8::4]
+    /// `TOR_PT_OUTBOUND_BIND_ADDRESS_V6`=[`2001:db8::4`]
     pub TOR_PT_OUTBOUND_BIND_ADDRESS_V6: Ipv6Addr,
 }
 impl TryFrom<RawCommonKey> for CommonKey {
@@ -109,7 +115,7 @@ impl TryFrom<RawCommonKey> for CommonKey {
             _ => "0.0.0.0"
                 .parse::<Ipv4Addr>()
                 .map_err(|e| ConfigError::InvalidConfigErr {
-                    message: format!("Invalid TOR_PT_OUTBOUND_BIND_ADDRESS_V4: {}", e),
+                    message: format!("Invalid TOR_PT_OUTBOUND_BIND_ADDRESS_V4: {e}"),
                 })?,
         };
         let TOR_PT_OUTBOUND_BIND_ADDRESS_V6 = match raw.TOR_PT_OUTBOUND_BIND_ADDRESS_V6 {
@@ -117,10 +123,10 @@ impl TryFrom<RawCommonKey> for CommonKey {
             _ => "::"
                 .parse::<Ipv6Addr>()
                 .map_err(|e| ConfigError::InvalidConfigErr {
-                    message: format!("Invalid TOR_PT_OUTBOUND_BIND_ADDRESS_V6: {}", e),
+                    message: format!("Invalid TOR_PT_OUTBOUND_BIND_ADDRESS_V6: {e}"),
                 })?,
         };
-        let version = separate_with(raw.TOR_PT_MANAGED_TRANSPORT_VER, ",");
+        let version = separate_with(&raw.TOR_PT_MANAGED_TRANSPORT_VER, ",");
         if !version
             .iter()
             .any(|v| CURRENT_TRANSPORT_VER.contains(&v.as_str()))
@@ -133,18 +139,21 @@ impl TryFrom<RawCommonKey> for CommonKey {
             TOR_PT_MANAGED_TRANSPORT_VER: version,
             TOR_PT_STATE_LOCATION: raw.TOR_PT_STATE_LOCATION,
             TOR_PT_EXIT_ON_STDIN_CLOSE: raw.TOR_PT_EXIT_ON_STDIN_CLOSE,
-            TOR_PT_OUTBOUND_BIND_ADDRESS_V4: TOR_PT_OUTBOUND_BIND_ADDRESS_V4,
-            TOR_PT_OUTBOUND_BIND_ADDRESS_V6: TOR_PT_OUTBOUND_BIND_ADDRESS_V6,
+            TOR_PT_OUTBOUND_BIND_ADDRESS_V4,
+            TOR_PT_OUTBOUND_BIND_ADDRESS_V6,
         })
     }
 }
 
+/// Used to validate that the config is valid
 #[derive(Debug, Deserialize)]
 pub(crate) struct RawClientKey {
     #[serde(rename = "tor_pt_client_transports")]
+    /// For field documentation, see the corresponding fields in [`ClintKey`].
     pub(crate) TOR_PT_CLIENT_TRANSPORTS: Vec<PtTransportName>,
 
     #[serde(rename = "tor_pt_proxy")]
+    /// For field documentation, see the corresponding fields in [`ClientKey`].
     pub(crate) TOR_PT_PROXY: Option<Url>,
 }
 
@@ -168,6 +177,7 @@ impl TryFrom<RawClientKey> for ClientKey {
 #[derive(Debug, Serialize, Deserialize, Deftly)]
 #[derive_deftly(DefineVariantError)]
 #[serde(try_from = "RawClientKey")]
+#[allow(clippy::exhaustive_structs)]
 pub struct ClientKey {
     /// Specifies the PT protocols the client proxy should initialize, as a comma separated list of PT names.
     ///
@@ -176,7 +186,7 @@ pub struct ClientKey {
     /// Parent processes MUST set this environment variable when launching a client-side PT proxy instance.
     ///
     /// Example:
-    /// TOR_PT_CLIENT_TRANSPORTS=obfs2,obfs3,obfs4
+    /// `TOR_PT_CLIENT_TRANSPORTS=obfs2,obfs3,obfs4`
     pub TOR_PT_CLIENT_TRANSPORTS: Vec<PtTransportName>,
     /// Specifies an upstream proxy that the PT MUST use when making outgoing network connections.
     ///
@@ -186,12 +196,37 @@ pub struct ClientKey {
     /// This environment variable is OPTIONAL and MUST be omitted if there is no need to connect via an upstream proxy.
     ///
     /// Example
-    /// TOR_PT_PROXY=socks5://user:pass@192.168.1.1:1080
+    /// `TOR_PT_PROXY=socks5://user:pass@192.168.1.1:1080`
     pub TOR_PT_PROXY: Option<Url>,
 }
 
 /// Validate a proxy Url
-/// NOTE: this function is taken from ptrs and we changed it slighly
+/// checks that the provided proxy URL:
+/// - Uses a supported scheme (`socks5`, `socks4a`, or `http`).
+/// - Has a valid host and port.
+/// - Has no query parameters or fragments.
+/// - Has valid credentials for the specified scheme.
+/// - Can be resolved to a socket address.
+///
+/// # Panics
+/// Panics if the URL is missing a host or port after the initial validation checks.
+/// This should not happen in practice because the function checks for these earlier,
+/// but the `expect()` calls are used to simplify the code.
+///
+/// # Errors
+/// Returns `ClientKeyConfigError::InvalidTOR_PT_PROXY` if:
+/// - The URL scheme is not supported (`socks5`, `socks4a`, or `http`).
+/// - The URL contains a query string or fragment.
+/// - The URL has a non-empty path (except for `http` scheme with path `/`).
+/// - The URL is missing a port.
+/// - The URL is missing a host.
+/// - The URL has invalid credentials:
+///   - For `socks5`: username is empty but password is provided, or vice versa.
+///   - For `socks5`: username or password exceeds 255 characters.
+///   - For `socks4a`: a password is provided (not supported).
+/// - The host cannot be resolved to a socket address.
+/// # NOTE:
+/// this function is taken from ptrs and we changed it slighly
 #[allow(clippy::collapsible_if)]
 pub fn validate_proxy_url(spec: &Url) -> Result<(), ClientKeyConfigError> {
     if !SCHEMES.contains(&spec.scheme()) {
@@ -212,15 +247,15 @@ pub fn validate_proxy_url(spec: &Url) -> Result<(), ClientKeyConfigError> {
             });
         }
     }
-    if spec.query().is_some() {
-        if !spec.query().unwrap().is_empty() {
+    if let Some(query) = spec.query() {
+        if !query.is_empty() {
             return Err(ClientKeyConfigError::InvalidTOR_PT_PROXY {
                 message: "proxy URI has a query defined".to_string(),
             });
         }
     }
-    if spec.fragment().is_some() {
-        if !spec.fragment().unwrap().is_empty() {
+    if let Some(fragment) = spec.fragment() {
+        if !fragment.is_empty() {
             return Err(ClientKeyConfigError::InvalidTOR_PT_PROXY {
                 message: "proxy URI has a fragment defined".to_string(),
             });
@@ -279,9 +314,14 @@ pub fn validate_proxy_url(spec: &Url) -> Result<(), ClientKeyConfigError> {
     }
 
     // not sure how better to combine host port.
-    let mut sockaddr_string = String::from(spec.host_str().unwrap());
+    let mut sockaddr_string = String::from(spec.host_str().expect("Proxy URL missing host"));
     sockaddr_string.push(':');
-    sockaddr_string.push_str(&format!("{}", spec.port().unwrap()));
+    // Write to a normal String will never fail
+    let _ = write!(
+        sockaddr_string,
+        "{}",
+        spec.port().expect("Proxy URL missing port")
+    );
     let _ =
         resolve_addr(&sockaddr_string).map_err(|e| ClientKeyConfigError::InvalidTOR_PT_PROXY {
             message: format!("proxy URI has invalid host: {e}"),
@@ -291,8 +331,14 @@ pub fn validate_proxy_url(spec: &Url) -> Result<(), ClientKeyConfigError> {
 }
 
 /// return a Valid Socket Address
-pub fn resolve_addr(addr: &str) -> Result<SocketAddr, ClientKeyConfigError> {
-    let a = addr.as_ref();
+/// This function parses a string like `"127.0.0.1:8080"` into a `SocketAddr`,
+/// and performs additional validation to ensure the address is usable.
+/// # Errors
+/// Returns `ClientKeyConfigError::InvalidTOR_PT_PROXY` if:
+/// - The string cannot be parsed as a valid socket address (e.g., malformed format).
+/// - The IP address is unspecified (e.g., `0.0.0.0` or `::`).
+/// - The port is `0`.
+pub fn resolve_addr(a: &str) -> Result<SocketAddr, ClientKeyConfigError> {
     match SocketAddr::from_str(a) {
         Ok(sock_addr) => {
             if sock_addr.ip().is_unspecified() {
@@ -319,12 +365,13 @@ pub fn resolve_addr(addr: &str) -> Result<SocketAddr, ClientKeyConfigError> {
 ///  where <key> is a PT name and <value> is a k=v string value
 /// with options that are to be passed to the transport.
 /// Example:
-/// TOR_PT_SERVER_TRANSPORT_OPTIONS=scramblesuit:key=banana;automata:rule=110;automata:depth=3
+/// `TOR_PT_SERVER_TRANSPORT_OPTIONS=scramblesuit:key=banana;automata:rule=110;automata:depth=3`
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq)]
+#[non_exhaustive]
 pub struct TransportOption {
-    /// Corresponding PtTransportName of Settings
+    /// Corresponding `PtTransportName` of Settings
     pub name: PtTransportName,
-    /// Diffrent settings to PtTransport
+    /// Diffrent settings to `PtTransport`
     pub settings: HashMap<String, String>,
 }
 
@@ -332,12 +379,12 @@ pub struct TransportOption {
 #[derive(Debug, Serialize, Deserialize)]
 pub(crate) struct RawServerKey {
     /// Example:
-    /// TOR_PT_SERVER_TRANSPORTS=obfs3,scramblesuit
+    /// `TOR_PT_SERVER_TRANSPORTS=obfs3,scramblesuit`
     #[serde(rename = "tor_pt_server_transports")]
     pub(crate) TOR_PT_SERVER_TRANSPORTS: Vec<PtTransportName>,
 
     /// Example:
-    /// TOR_PT_SERVER_TRANSPORT_OPTIONS=scramblesuit:key=banana;automata:rule=110;automata:depth=3
+    /// `TOR_PT_SERVER_TRANSPORT_OPTIONS=scramblesuit:key=banana;automata:rule=110;automata:depth=3`
     #[serde(rename = "tor_pt_server_transport_options")]
     pub(crate) TOR_PT_SERVER_TRANSPORT_OPTIONS: String,
 
@@ -350,39 +397,41 @@ pub(crate) struct RawServerKey {
     /// the PT reverse proxy should forward traffic to after transforming it as appropriate,
     ///  as an <address>:<port>.
     ///
-    /// Connections to the destination specified via “TOR_PT_ORPORT” MUST only contain application payload.
+    /// Connections to the destination specified via “`TOR_PT_ORPORT`” MUST only contain application payload.
     ///  If the parent process requires the actual source IP address of client connections (or other metadata),
-    ///  it should set “TOR_PT_EXTENDED_SERVER_PORT” instead.
+    ///  it should set “`TOR_PT_EXTENDED_SERVER_PORT`” instead.
     ///
     ///  Example:
-    /// TOR_PT_ORPORT==127.0.0.1:4200
+    /// `TOR_PT_ORPORT==127.0.0.1:4200`
     #[serde(rename = "tor_pt_orport")]
     pub(crate) TOR_PT_ORPORT: SocketAddr,
 
     /// Example:
-    /// TOR_PT_EXTENDED_SERVER_PORT=127.0.0.1:4200
+    /// `TOR_PT_EXTENDED_SERVER_PORT=127.0.0.1:4200`
     #[serde(rename = "tor_pt_extended_server_port")]
     pub(crate) TOR_PT_EXTENDED_SERVER_PORT: SocketAddr,
 
     /// Example:
-    /// TOR_PT_AUTH_COOKIE_FILE=/var/lib/tor/extended_orport_auth_cookie
+    /// `TOR_PT_AUTH_COOKIE_FILE=/var/lib/tor/extended_orport_auth_cookie`
     #[serde(rename = "tor_pt_auth_cookie_file")]
     pub(crate) TOR_PT_AUTH_COOKIE_FILE: PathBuf,
 }
 
-/// Many TransportOption
+/// Many `TransportOption`
+/// This is exhaustive, because we will not change it
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq)]
+#[allow(clippy::exhaustive_structs)]
 pub struct TransportOptions {
-    /// Many TransportOption
+    /// Many `TransportOption`
     pub options: Vec<TransportOption>,
 }
 impl FromStr for TransportOptions {
     type Err = ConfigError;
     /// Input: "scramblesuit:key=banana;automata:rule=110;automata:depth=3"
     /// Output: [
-    ///   TransportOption { name: "scramblesuit", settings: {"key": "banana"} },
-    ///   TransportOption { name: "automata", settings: {"rule": "110"} },
-    ///   TransportOption { name: "automata", settings: {"depth": "3"} },
+    ///   `TransportOption` { name: "scramblesuit", settings: {"key": "banana"} },
+    ///   `TransportOption` { name: "automata", settings: {"rule": "110"} },
+    ///   `TransportOption` { name: "automata", settings: {"depth": "3"} },
     /// ]
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         // scramblesuit:key=banana
@@ -404,12 +453,13 @@ impl FromStr for TransportOptions {
             })
             .collect::<Result<Vec<TransportOption>, ConfigError>>()?;
 
-        Ok(TransportOptions { options: options })
+        Ok(TransportOptions { options })
     }
 }
 
 impl TransportOption {
-    /// To generate a TransportOption::settings
+    /// To generate a `TransportOption::settings`
+    #[must_use]
     pub fn generate_settings(pairs: &[(&str, &str)]) -> HashMap<String, String> {
         pairs
             .iter()
@@ -449,8 +499,8 @@ impl TryFrom<RawServerKey> for ServerKey {
         }
         Ok(ServerKey {
             TOR_PT_SERVER_TRANSPORTS: raw.TOR_PT_SERVER_TRANSPORTS,
-            TOR_PT_SERVER_TRANSPORT_OPTIONS: TOR_PT_SERVER_TRANSPORT_OPTIONS,
-            TOR_PT_SERVER_BINDADDR: TOR_PT_SERVER_BINDADDR,
+            TOR_PT_SERVER_TRANSPORT_OPTIONS,
+            TOR_PT_SERVER_BINDADDR,
             TOR_PT_ORPORT: raw.TOR_PT_ORPORT,
             TOR_PT_EXTENDED_SERVER_PORT: raw.TOR_PT_EXTENDED_SERVER_PORT,
             TOR_PT_AUTH_COOKIE_FILE: raw.TOR_PT_AUTH_COOKIE_FILE,
@@ -460,18 +510,19 @@ impl TryFrom<RawServerKey> for ServerKey {
 /// Settings which is needed at server side
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(try_from = "RawServerKey")]
+#[allow(clippy::exhaustive_structs)]
 pub struct ServerKey {
     /// Specifies the PT protocols the server proxy should initialize, as a comma separated list of PT names.
     /// PTs SHOULD ignore PT names that it does not recognize.
     /// Example:
-    /// TOR_PT_SERVER_TRANSPORTS=obfs3,scramblesuit
+    /// `TOR_PT_SERVER_TRANSPORTS=obfs3,scramblesuit`
     pub TOR_PT_SERVER_TRANSPORTS: Vec<PtTransportName>,
     /// Specifies per-PT protocol configuration directives,
     ///  as a semicolon-separated list of <key>:<value> pairs,
     ///  where <key> is a PT name and <value> is a k=v string value
     /// with options that are to be passed to the transport.
     /// Example:
-    /// TOR_PT_SERVER_TRANSPORT_OPTIONS=scramblesuit:key=banana;automata:rule=110;automata:depth=3
+    /// `TOR_PT_SERVER_TRANSPORT_OPTIONS=scramblesuit:key=banana;automata:rule=110;automata:depth=3`
     pub TOR_PT_SERVER_TRANSPORT_OPTIONS: Option<TransportOptions>,
     /// A comma separated list of <key>-<value> pairs,
     /// where <key> is a PT name and <value> is the <address>:<port>
@@ -482,27 +533,27 @@ pub struct ServerKey {
     /// Specifies the destination that
     /// the PT reverse proxy should forward traffic to after transforming it as appropriate,
     ///  as an <address>:<port>.
-    /// Connections to the destination specified via “TOR_PT_ORPORT” MUST only contain application payload.
+    /// Connections to the destination specified via “`TOR_PT_ORPORT`” MUST only contain application payload.
     ///  If the parent process requires the actual source IP address of client connections (or other metadata),
-    ///  it should set “TOR_PT_EXTENDED_SERVER_PORT” instead.
+    ///  it should set “`TOR_PT_EXTENDED_SERVER_PORT`” instead.
     ///  Example:
-    /// TOR_PT_ORPORT==127.0.0.1:4200
+    /// `TOR_PT_ORPORT==127.0.0.1:4200`
     pub TOR_PT_ORPORT: SocketAddr,
     /// Specifies the destination that the PT reverse proxy should forward traffic to,
-    /// via the Extended ORPort protocol [EXTORPORT] as an <address>:<port>.
-    /// The Extended ORPort protocol allows the PT reverse proxy to communicate per-connection metadata
+    /// via the Extended `ORPort` protocol [EXTORPORT] as an <address>:<port>.
+    /// The Extended `ORPort` protocol allows the PT reverse proxy to communicate per-connection metadata
     /// such as the PT name and client IP address/port to the parent process.
-    /// If the parent process does not support the ExtORPort protocol,
-    /// it MUST set “TOR_PT_EXTENDED_SERVER_PORT” to an empty string.
+    /// If the parent process does not support the `ExtORPort` protocol,
+    /// it MUST set “`TOR_PT_EXTENDED_SERVER_PORT`” to an empty string.
     /// Example:
-    /// TOR_PT_EXTENDED_SERVER_PORT=127.0.0.1:4200
+    /// `TOR_PT_EXTENDED_SERVER_PORT=127.0.0.1:4200`
     pub TOR_PT_EXTENDED_SERVER_PORT: SocketAddr,
-    /// Specifies an absolute filesystem path to the Extended ORPort authentication cookie,
-    ///  required to communicate with the Extended ORPort specified via “TOR_PT_EXTENDED_SERVER_PORT”.
-    /// If the parent process is not using the ExtORPort protocol for incoming traffic,
-    /// “TOR_PT_AUTH_COOKIE_FILE” MUST be omitted.
+    /// Specifies an absolute filesystem path to the Extended `ORPort` authentication cookie,
+    ///  required to communicate with the Extended `ORPort` specified via “`TOR_PT_EXTENDED_SERVER_PORT`”.
+    /// If the parent process is not using the `ExtORPort` protocol for incoming traffic,
+    /// “`TOR_PT_AUTH_COOKIE_FILE`” MUST be omitted.
     /// Example:
-    /// TOR_PT_AUTH_COOKIE_FILE=/var/lib/tor/extended_orport_auth_cookie
+    /// `TOR_PT_AUTH_COOKIE_FILE=/var/lib/tor/extended_orport_auth_cookie`
     pub TOR_PT_AUTH_COOKIE_FILE: PathBuf,
 }
 
@@ -521,6 +572,7 @@ mod test {
     #![allow(clippy::useless_vec)]
     #![allow(clippy::needless_pass_by_value)]
     #![allow(clippy::string_slice)] // See arti#2571
+    #![allow(clippy::pedantic)]
     //! <!-- @@ end test lint list maintained by maint/add_warning @@ -->
     #![allow(unused)]
     use super::*;

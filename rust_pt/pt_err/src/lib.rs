@@ -48,6 +48,7 @@
 #![deny(clippy::unnecessary_wraps)]
 #![deny(clippy::unused_async)]
 #![deny(clippy::unwrap_used)]
+#![deny(clippy::pedantic)]  // This is not in Arti
 //! <!-- @@ end lint list
 #[doc(hidden)]
 pub use derive_deftly;
@@ -55,11 +56,12 @@ use derive_deftly::Deftly;
 use thiserror::Error;
 /// Diffrent macros for Error
 mod macros;
-/// Errors which is related with ExtOrPort
+/// Errors which is related with `ExtOrPort`
 #[derive(Debug, Error, PartialEq, Deftly)]
 #[derive_deftly(OtherFromError)]
+#[non_exhaustive]
 pub enum ExtOrPortError {
-    /// The StaticHeader is invalid
+    /// The `StaticHeader` is invalid
     #[error("Invalid StaticHeader it should be \"! Extended ORPort Auth Cookie !\x0a\"")]
     InvalidStaticHeader,
     /// Unsupported auth types
@@ -71,7 +73,7 @@ pub enum ExtOrPortError {
     /// client's address.
     #[error("Invalid USERADDR: {0}")]
     InvalidUserAddr(String),
-    /// EndAuthType Unfound
+    /// `EndAuthType` Unfound
     #[error("EndAuthTypeUnfound")]
     EndAuthTypeUnfound,
     /// Server returns an invalid message
@@ -84,7 +86,7 @@ pub enum ExtOrPortError {
     #[error("Server sent a message which indicates that Client hash validation failed")]
     InvalidClientHash,
     /// Other errors
-    /// Can be converted from anyhow::Error
+    /// Can be converted from `anyhow::Error`
     #[error("Error: {0}")]
     Other(String),
 }
@@ -92,6 +94,7 @@ pub enum ExtOrPortError {
 /// Errors which could cause during the Config parsing.
 #[derive(Debug, Error, PartialEq, Deftly)]
 #[derive_deftly(OtherFromError)]
+#[non_exhaustive]
 pub enum ConfigError {
     /// Configuration error with additional context.
     /// # Example
@@ -116,12 +119,13 @@ pub enum ConfigError {
         message: String,
     },
     /// Other errors
-    /// Can be converted from anyhow::Error
+    /// Can be converted from `anyhow::Error`
     #[error("Error: {0}")]
     Other(String),
 }
 /// Errors which could cause by variant
 #[derive(Debug, Error, PartialEq)]
+#[non_exhaustive]
 pub enum VariantError {
     /// Error indicates that the Variant hasn't found
     /// # Example

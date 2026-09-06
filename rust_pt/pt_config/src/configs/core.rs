@@ -3,13 +3,14 @@
 // Filename: core.rs
 //======================================================================
 
-use crate::configs::configs::{ClientKey, CommonKey, ServerKey};
+use crate::configs::keys::{ClientKey, CommonKey, ServerKey};
 use pt_tracing::rec_panic;
 use serde::{Deserialize, Serialize};
 /// Main Config
 /// But we are not going to serialize it
 #[derive(Serialize, Deserialize)]
 #[serde(untagged)]
+#[non_exhaustive]
 pub enum ConfigKey {
     /// Config which is needed in Server Side
     Server {
@@ -34,14 +35,15 @@ pub enum ConfigKey {
 impl ConfigKey {
     /// initialize Config from env
     /// We panic fastly here
+    #[must_use]
     pub fn init() -> Self {
         let common_key = match envy::from_env::<CommonKey>() {
             Err(x) => {
-                rec_panic!(&format!("Invalid or unset CommonKey {}", x.to_string()));
+                rec_panic!(&format!("Invalid or unset CommonKey {x}"));
             },
             Ok(common_key) => common_key,
         };
-        let key = match (envy::from_env::<ServerKey>(), envy::from_env::<ClientKey>()) {
+        match (envy::from_env::<ServerKey>(), envy::from_env::<ClientKey>()) {
             (Err(_), Ok(client_key)) => ConfigKey::Client {
                 client_key,
                 common_key,
@@ -53,16 +55,13 @@ impl ConfigKey {
             (Err(x), Err(y)) => {
                 rec_panic!(&format!(
                     "Invalid or unset ServerKey and ClientKey 
-                    You must set one of them:  {} {}",
-                    x.to_string(),
-                    y.to_string()
+                    You must set one of them:  {x} {y}",
                 ));
             },
             (Ok(_), Ok(_)) => {
                 rec_panic!("ServerKey and ClientKey are both set. You may only set one");
             },
-        };
-        key
+        }
     }
 }
 
@@ -81,11 +80,12 @@ mod test {
     #![allow(clippy::useless_vec)]
     #![allow(clippy::needless_pass_by_value)]
     #![allow(clippy::string_slice)] // See arti#2571
+    #![allow(clippy::pedantic)]
     //! <!-- @@ end test lint list maintained by maint/add_warning @@ -->
     #![allow(unused)]
     use crate::configs::{
-        configs::{ClientKey, CommonKey, ServerKey},
         core::ConfigKey,
+        keys::{ClientKey, CommonKey, ServerKey},
     };
     use std::env;
     fn set_env() {
@@ -115,9 +115,8 @@ mod test {
     }
     /// Safety: We are not in a Async function so we have only 1 thread
     #[test]
-    fn server_parse_test() -> anyhow::Result<()> {
+    fn server_parse_test() {
         set_env();
         let config_key = ConfigKey::init();
-        Ok(())
     }
 }
