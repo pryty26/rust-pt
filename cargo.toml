@@ -9,16 +9,16 @@ members = [
 resolver = "2"
 [workspace.package]
 name = "rust-pt"
-version = "0.0.0-alpha.1"
+version = "0.0.0-alpha.2"
 edition = "2024"
 license = "Apache-2.0"   
 repository = "https://gitlab.torproject.org/pryty26/rust-pt"
 
 [workspace.dependencies]
-pt_err = { version = "0.0.0-alpha.1" }
-pt_core = { version = "0.0.0-alpha.1" }
-pt_config = { version = "0.0.0-alpha.1" }
-pt_tracing = { version = "0.0.0-alpha.1" }
+pt_err = { version = "0.0.0-alpha.2" }
+pt_core = { version = "0.0.0-alpha.2" }
+pt_config = { version = "0.0.0-alpha.2" }
+pt_tracing = { version = "0.0.0-alpha.2" }
 
 anyhow = "1.0.104"
 zip = "8.6.0"
