@@ -6,7 +6,7 @@ Cargo.lock
 *.prof*
 *.dwarf
 .vscode/
-history.txt
+history.*
 .idea/
 *.iml
 *.iws
