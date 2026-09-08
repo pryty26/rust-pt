@@ -129,16 +129,16 @@ yes, there is a PTs written in rust, I did linked it in an email I replied to yo
 on the code hosting, let's start with you selfhosting it, once you have something working we'll review it and discuss where to host it
 
 ## FIle tree
-# This may be outdate (last update: 2026.9.6)
+# This may be outdate (last update: 2026.9.8)
+
 
 
 ```
-rust-pt
 ├── pt_config
 │   ├── src
 │   │   ├── configs
-│   │   │   ├── configs.rs
-│   │   │   └── core.rs
+│   │   │   ├── core.rs
+│   │   │   └── keys.rs
 │   │   ├── configs.rs
 │   │   ├── lib.rs
 │   │   ├── macros.rs
@@ -152,6 +152,7 @@ rust-pt
 │   │   │   ├── protocol.rs
 │   │   │   └── traits.rs
 │   │   ├── extorport.md
+│   │   ├── init.rs
 │   │   ├── lib.rs
 │   │   ├── orport.rs
 │   │   └── variables.rs
