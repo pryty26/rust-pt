@@ -48,7 +48,7 @@
 #![deny(clippy::unnecessary_wraps)]
 #![deny(clippy::unused_async)]
 #![deny(clippy::unwrap_used)]
-#![deny(clippy::pedantic)]  // This is not in Arti
+#![deny(clippy::pedantic)] // This is not in Arti
 //! <!-- @@ end lint list
 #![allow(clippy::print_stderr)]
 #![allow(clippy::print_stdout)]
@@ -122,7 +122,8 @@ impl From<SEVERITY> for LevelFilter {
 ///     );
 ///     let level = SEVERITY::NOTICE;
 ///     PtTracing::fmt()
-///         .with_severity(level);
+///         .with_severity(level)
+///         .try_init()?;
 ///     // Yes I used Result in every DEBUG, INFO, NOTICE, WARNING, ERROR function
 ///     PtTracing::debug("cool debug message")?;
 ///     PtTracing::info("cool info message")?;

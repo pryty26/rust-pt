@@ -48,7 +48,7 @@
 #![deny(clippy::unnecessary_wraps)]
 #![deny(clippy::unused_async)]
 #![deny(clippy::unwrap_used)]
-#![deny(clippy::pedantic)]  // This is not in Arti
+#![deny(clippy::pedantic)] // This is not in Arti
 //! <!-- @@ end lint list
 #[doc(hidden)]
 pub use derive_deftly;
@@ -75,6 +75,9 @@ pub enum ExtOrPortError {
     InvalidUserAddr(String),
     /// `EndAuthType` Unfound
     #[error("EndAuthTypeUnfound")]
+    EndAuthTypeUnfoundWithCandidates(Vec<u8>),
+    /// `EndAuthType` Unfound
+    #[error("EndAuthTypeUnfound")]
     EndAuthTypeUnfound,
     /// Server returns an invalid message
     #[error("Invalid Server Message: {0}")]
@@ -85,6 +88,9 @@ pub enum ExtOrPortError {
     /// Server sent a message which indicates that Client hash validation failed
     #[error("Server sent a message which indicates that Client hash validation failed")]
     InvalidClientHash,
+    /// PT name is longer than 65535 bytes
+    #[error("PT name is longer than 65535 bytes: {0}")]
+    PtNameTooLong(String),
     /// Other errors
     /// Can be converted from `anyhow::Error`
     #[error("Error: {0}")]

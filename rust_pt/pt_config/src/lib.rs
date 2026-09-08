@@ -48,7 +48,7 @@
 #![deny(clippy::unnecessary_wraps)]
 #![deny(clippy::unused_async)]
 #![deny(clippy::unwrap_used)]
-#![deny(clippy::pedantic)]  // This is not in Arti
+#![deny(clippy::pedantic)] // This is not in Arti
 //! <!-- @@ end lint list
 #[doc(hidden)]
 pub use derive_deftly;
@@ -60,6 +60,6 @@ use dotenvy::dotenv;
 /// variables
 pub mod variable;
 /// Init the .env
-pub static ENV_LOADED: std::sync::LazyLock<()> = std::sync::LazyLock::new(|| {
+pub(crate) static ENV_LOADED: std::sync::LazyLock<()> = std::sync::LazyLock::new(|| {
     let _ = dotenv().ok();
 });

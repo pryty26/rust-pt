@@ -11,10 +11,10 @@ use getrandom::fill;
 use hmac::{Hmac, KeyInit, Mac};
 use pt_config::{
     derive_deftly_template_Builder, derive_deftly_template_FromDiscriminant,
-    derive_deftly_template_FromString,
+    derive_deftly_template_FromString, derive_deftly_template_IntoU8,
 };
 use pt_err::ExtOrPortError;
-use pt_tracing::rec_panic;
+use pt_tracing::{prelude::*, rec_panic};
 use sha2::Sha256;
 use std::net::SocketAddr;
 use std::path::PathBuf;
@@ -39,7 +39,7 @@ pub fn mac_message(key: &[u8], message: &[u8]) -> Result<[u8; 32]> {
 }
 /// Different state for Pt `ExtOrPort`
 #[derive(Copy, Clone, Deftly, PartialEq, Eq)]
-#[derive_deftly(FromDiscriminant, FromString)]
+#[derive_deftly(FromDiscriminant, FromString, IntoU8)]
 #[non_exhaustive]
 pub enum ExtOrPortState {
     /// Negetiating the auth type
@@ -125,7 +125,7 @@ pub struct ExtOrPort {
 /// ```
 #[repr(u8)]
 #[derive(Deftly, PartialEq, Eq, Copy, Clone)]
-#[derive_deftly(FromDiscriminant, FromString)]
+#[derive_deftly(FromDiscriminant, FromString, IntoU8)]
 #[non_exhaustive]
 pub enum AuthTypes {
     /// `EndAuthType`
@@ -343,13 +343,30 @@ impl ExtOrPort {
             }
         }
         if !end_found {
-            return Err(ExtOrPortError::EndAuthTypeUnfound);
+            let buf = sup_buf.iter().copied().map(u8::from).collect();
+            return Err(ExtOrPortError::EndAuthTypeUnfoundWithCandidates(buf));
         }
         if sup_buf.is_empty() {
             return Err(ExtOrPortError::UnsupportedAuthTypes);
         }
         // Let's just return the first supported auth type
         Ok(sup_buf[0])
+    }
+    /// Function used to reduce repeat code
+    /// I used that because some of the authentication type requires the client to send a message first.
+    pub(crate) async fn get_auth_buf(
+        buf: &mut AuthNegBuf,
+        reader: &mut ReadHalf<'_>,
+    ) -> Result<usize, ExtOrPortError> {
+        let msg = reader.read(buf).await?;
+        if msg == 0 {
+            // The sender closed connection and we should panic,
+            // because if we can not establish a connection,
+            // it means we can not send data to the tor server
+            // therefore, we must panic to tell the user that we have not estalbished connection
+            rec_panic!("The sender closed connection in ExtOrPort");
+        }
+        Ok(msg)
     }
     /// Establish a `ExtOrPort` connection
     ///
@@ -365,6 +382,16 @@ impl ExtOrPort {
     /// This function will panic if:
     /// - The sender closes the connection during authentication negotiation
     /// - The server does not support any compatible authentication types
+    ///
+    /// # Cancellation Safety
+    ///
+    /// This method is **not cancellation safe**. If the future is cancelled
+    /// after partial write, the stream may contain partial frame data.
+    /// The caller should discard the stream if the operation is interrupted.
+    ///
+    /// # Reuse ability
+    /// This method is **not Reusable**
+    /// ones it returns Error, this method cannot be reused
     pub async fn connect(&mut self) -> Result<TcpStream, ExtOrPortError> {
         let mut connection = TcpStream::connect(self.addr).await?;
         let (mut reader, mut writer) = connection.split();
@@ -373,24 +400,29 @@ impl ExtOrPort {
         // EndAuthTypes                                [1 octet]
         loop {
             let mut buf: AuthNegBuf = [0; 256];
-            let msg = reader.read(&mut buf).await?;
-            if msg == 0 {
-                // The sender closed connection and we should panic,
-                // because if we can not establish a connection,
-                // it means we can not send data to the tor server
-                // therefore, we must panic to tell the user that we have not estalbished connection
-                rec_panic!("The sender closed connection in ExtOrPort");
-            }
+
             match self.state {
                 ExtOrPortState::AuthTypesNegotiation => {
+                    let msg = Self::get_auth_buf(&mut buf, &mut reader).await?;
                     match Self::auth_types_neg(buf, msg) {
                         Ok(auth_type) => {
-                            self.state = ExtOrPortState::SafeCookieAuthentication;
+                            // NOTE: we may add more variant, and match is more clean here
+                            #[allow(clippy::single_match_else)]
+                            match auth_type {
+                                AuthTypes::SafeCookie => {
+                                    self.state = ExtOrPortState::SafeCookieAuthentication;
+                                },
+                                _ => {
+                                    rec_panic!("UnknownAuthTypes");
+                                },
+                            }
                             writer.write_all(&[auth_type as u8]).await?;
                         },
-                        Err(ExtOrPortError::EndAuthTypeUnfound) => {
+                        Err(ExtOrPortError::EndAuthTypeUnfoundWithCandidates(auth_cand)) => {
                             // Maybe user repeats some auth types
-                            // So we should try to collect again
+                            // So we should raise an error
+                            PtTracing::warn(&format!("EndAuthTypeUnfound: {auth_cand:?}"))?;
+                            return Err(ExtOrPortError::EndAuthTypeUnfound);
                         },
                         Err(ExtOrPortError::UnsupportedAuthTypes) => {
                             writer.write_all(&[0]).await?;
