@@ -61,6 +61,7 @@ define_derive_deftly! {
     /// }
     /// ```
     export FromString for enum:
+    use std::string::ToString;
     impl From<$ttype> for String {
         fn from(value: $ttype) -> Self {
             match value {
@@ -77,8 +78,9 @@ define_derive_deftly! {
                 $(
                     stringify!($vname) => Ok($vpat),
                 )
-                e => { return Err(pt_err::VariantError::UnfoundError {
-                    message: e.to_string()
+                e => { 
+                    return Err(pt_err::VariantError::UnfoundError {
+                    message: format!("{}", e) 
                 });
             }
             }
@@ -92,7 +94,7 @@ define_derive_deftly! {
                     stringify!($vname) => Ok($vpat),
                 )
                 e => { return Err(pt_err::VariantError::UnfoundError {
-                    message: e.to_string()
+                    message: format!("{}", e) 
                 });
             }
             }
@@ -106,7 +108,7 @@ define_derive_deftly! {
                     stringify!($vname) => Ok($vpat),
                 )
                 e => { return Err(pt_err::VariantError::UnfoundError {
-                    message: e.to_string()
+                    message: format!("{}", e) 
                 });
             }
             }
@@ -168,7 +170,7 @@ define_derive_deftly! {
                     $vindex => Ok($vpat),
                 )
                 e => { return Err(pt_err::VariantError::UnfoundError {
-                    message: e.to_string()
+                    message: format!("{}", e) 
                 });
             }
             }
@@ -179,7 +181,7 @@ define_derive_deftly! {
                     $vpat => Ok($vindex),
                 )
                 e => { return Err(pt_err::VariantError::UnfoundError {
-                    message: e.to_string()
+                    message: format!("{}", *e as usize) 
                 });
             }
             }
@@ -224,7 +226,7 @@ define_derive_deftly! {
                 $< discriminant_ $vname > => Ok($vpat),
             )
             e => { return Err(pt_err::VariantError::UnfoundError {
-                    message: e.to_string()
+                    message: format!("{}", v) 
                 });
             },
         }
