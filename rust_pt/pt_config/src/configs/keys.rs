@@ -386,7 +386,7 @@ pub(crate) struct RawServerKey {
     /// Example:
     /// `TOR_PT_SERVER_TRANSPORT_OPTIONS=scramblesuit:key=banana;automata:rule=110;automata:depth=3`
     #[serde(rename = "tor_pt_server_transport_options")]
-    pub(crate) TOR_PT_SERVER_TRANSPORT_OPTIONS: String,
+    pub(crate) TOR_PT_SERVER_TRANSPORT_OPTIONS: Option<String>,
 
     ///Example:
     /// TOR_PT_SERVER_BINDADDR=obfs3-198.51.100.1:1984,scramblesuit-127.0.0.1:4891
@@ -404,17 +404,17 @@ pub(crate) struct RawServerKey {
     ///  Example:
     /// `TOR_PT_ORPORT==127.0.0.1:4200`
     #[serde(rename = "tor_pt_orport")]
-    pub(crate) TOR_PT_ORPORT: SocketAddr,
+    pub(crate) TOR_PT_ORPORT: Option<SocketAddr>,
 
     /// Example:
     /// `TOR_PT_EXTENDED_SERVER_PORT=127.0.0.1:4200`
     #[serde(rename = "tor_pt_extended_server_port")]
-    pub(crate) TOR_PT_EXTENDED_SERVER_PORT: SocketAddr,
+    pub(crate) TOR_PT_EXTENDED_SERVER_PORT: Option<SocketAddr>,
 
     /// Example:
     /// `TOR_PT_AUTH_COOKIE_FILE=/var/lib/tor/extended_orport_auth_cookie`
     #[serde(rename = "tor_pt_auth_cookie_file")]
-    pub(crate) TOR_PT_AUTH_COOKIE_FILE: PathBuf,
+    pub(crate) TOR_PT_AUTH_COOKIE_FILE: Option<PathBuf>,
 }
 
 /// Many `TransportOption`
@@ -470,12 +470,20 @@ impl TransportOption {
 
 impl TryFrom<RawServerKey> for ServerKey {
     type Error = ConfigError;
-
+    /// check the `RawServerKey` and make it into `ServerKey`
+    ///
+    /// # Panics
+    /// We should not panic in here, we should let the caller handle the Errors
     fn try_from(raw: RawServerKey) -> Result<Self, Self::Error> {
-        let x = TransportOptions::from_str(raw.TOR_PT_SERVER_TRANSPORT_OPTIONS.as_str())?;
-        let TOR_PT_SERVER_TRANSPORT_OPTIONS = match x.options {
-            x if x.is_empty() => None,
-            _ => Some(x),
+        let TOR_PT_SERVER_TRANSPORT_OPTIONS = match raw.TOR_PT_SERVER_TRANSPORT_OPTIONS {
+            Some(server_options) => {
+                let x = TransportOptions::from_str(&server_options)?;
+                match x.options {
+                    x if x.is_empty() => None,
+                    _ => Some(x),
+                }
+            },
+            None => None,
         };
         // obfs3-198.51.100.1:1984,scramblesuit-127.0.0.1:4891
         let TOR_PT_SERVER_BINDADDR: Vec<HashMap<PtTransportName, SocketAddr>> = raw
@@ -489,14 +497,33 @@ impl TryFrom<RawServerKey> for ServerKey {
                 HashMap::from([(name.to_string(), addr)])
             })
             .collect();
-        // Pluggable transport proxies SHOULD issue a warning
-        // if they are instructed to connect to a non-localhost Extended ORPort.
-        if !raw.TOR_PT_EXTENDED_SERVER_PORT.ip().is_loopback() {
-            PtTracing::warn(&format!(
-                "Extended ORPort is not on localhost: {}",
-                raw.TOR_PT_EXTENDED_SERVER_PORT
-            ))?;
+        // ---
+        // Orport and Extorport checks
+        if raw.TOR_PT_EXTENDED_SERVER_PORT.is_none() && raw.TOR_PT_ORPORT.is_none() {
+            return Err(ConfigError::InvalidConfigErr {
+                message: "EXTORPORT and ORPORT could not be both empty".to_string(),
+            });
         }
+        if let Some(extorport) = raw.TOR_PT_EXTENDED_SERVER_PORT {
+            if raw.TOR_PT_AUTH_COOKIE_FILE.is_none() {
+                return Err(ConfigError::InvalidConfigErr {
+                    message: "TOR_PT_AUTH_COOKIE_FILE is needed for EXTORPORT".to_string(),
+                });
+            }
+            // Pluggable transport proxies SHOULD issue a warning
+            // if they are instructed to connect to a non-localhost Extended ORPort.
+            if !extorport.ip().is_loopback() {
+                PtTracing::warn(&format!("Extended ORPort is not on localhost: {extorport}"))?;
+            }
+        }
+        if let Some(orport) = raw.TOR_PT_ORPORT {
+            // Pluggable transport proxies SHOULD issue a warning
+            // if they are instructed to connect to a non-localhost Extended ORPort.
+            if !orport.ip().is_loopback() {
+                PtTracing::warn(&format!("ORPort is not on localhost: {orport}"))?;
+            }
+        }
+        // ---
         Ok(ServerKey {
             TOR_PT_SERVER_TRANSPORTS: raw.TOR_PT_SERVER_TRANSPORTS,
             TOR_PT_SERVER_TRANSPORT_OPTIONS,
@@ -538,7 +565,7 @@ pub struct ServerKey {
     ///  it should set “`TOR_PT_EXTENDED_SERVER_PORT`” instead.
     ///  Example:
     /// `TOR_PT_ORPORT==127.0.0.1:4200`
-    pub TOR_PT_ORPORT: SocketAddr,
+    pub TOR_PT_ORPORT: Option<SocketAddr>,
     /// Specifies the destination that the PT reverse proxy should forward traffic to,
     /// via the Extended `ORPort` protocol [EXTORPORT] as an <address>:<port>.
     /// The Extended `ORPort` protocol allows the PT reverse proxy to communicate per-connection metadata
@@ -547,14 +574,14 @@ pub struct ServerKey {
     /// it MUST set “`TOR_PT_EXTENDED_SERVER_PORT`” to an empty string.
     /// Example:
     /// `TOR_PT_EXTENDED_SERVER_PORT=127.0.0.1:4200`
-    pub TOR_PT_EXTENDED_SERVER_PORT: SocketAddr,
+    pub TOR_PT_EXTENDED_SERVER_PORT: Option<SocketAddr>,
     /// Specifies an absolute filesystem path to the Extended `ORPort` authentication cookie,
     ///  required to communicate with the Extended `ORPort` specified via “`TOR_PT_EXTENDED_SERVER_PORT`”.
     /// If the parent process is not using the `ExtORPort` protocol for incoming traffic,
     /// “`TOR_PT_AUTH_COOKIE_FILE`” MUST be omitted.
     /// Example:
     /// `TOR_PT_AUTH_COOKIE_FILE=/var/lib/tor/extended_orport_auth_cookie`
-    pub TOR_PT_AUTH_COOKIE_FILE: PathBuf,
+    pub TOR_PT_AUTH_COOKIE_FILE: Option<PathBuf>,
 }
 
 #[cfg(test)]

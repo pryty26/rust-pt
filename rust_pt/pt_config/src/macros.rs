@@ -61,7 +61,6 @@ define_derive_deftly! {
     /// }
     /// ```
     export FromString for enum:
-    use std::string::ToString;
     impl From<$ttype> for String {
         fn from(value: $ttype) -> Self {
             match value {
@@ -78,9 +77,9 @@ define_derive_deftly! {
                 $(
                     stringify!($vname) => Ok($vpat),
                 )
-                e => { 
+                e => {
                     return Err(pt_err::VariantError::UnfoundError {
-                    message: format!("{}", e) 
+                    message: format!("{}", e)
                 });
             }
             }
@@ -94,7 +93,7 @@ define_derive_deftly! {
                     stringify!($vname) => Ok($vpat),
                 )
                 e => { return Err(pt_err::VariantError::UnfoundError {
-                    message: format!("{}", e) 
+                    message: format!("{}", e)
                 });
             }
             }
@@ -108,7 +107,7 @@ define_derive_deftly! {
                     stringify!($vname) => Ok($vpat),
                 )
                 e => { return Err(pt_err::VariantError::UnfoundError {
-                    message: format!("{}", e) 
+                    message: format!("{}", e)
                 });
             }
             }
@@ -116,6 +115,36 @@ define_derive_deftly! {
     }
 }
 
+define_derive_deftly! {
+    /// Implemente into u8 for enums which has u8 discriminant
+    ///
+    /// # Example
+    /// ```rust
+    /// pub use derive_deftly::{define_derive_deftly, Deftly};
+    /// pub use pt_config::derive_deftly_template_IntoU8;
+    /// pub use anyhow::Result;
+    /// #[repr(u8)]
+    /// #[derive(Debug, Clone, Copy, Deftly)]
+    /// #[derive_deftly(IntoU8)]
+    /// enum Ex {
+    ///     A = 0,
+    ///     B = 1,
+    /// }
+    ///
+    /// fn main() {
+    ///     let x = u8::from(Ex::A);
+    ///     assert_eq!(x, 0);
+    ///     let y = u8::from(Ex::B);
+    ///     assert_eq!(y, 1);
+    /// }
+    /// ```
+    export IntoU8 for enum:
+    impl From<$ttype> for u8 {
+        fn from(auth: $ttype) -> Self {
+            auth as u8
+        }
+    }
+}
 define_derive_deftly! {
     /// The enum values must be consecutive integers starting from 0.
     /// # Errors
@@ -170,7 +199,7 @@ define_derive_deftly! {
                     $vindex => Ok($vpat),
                 )
                 e => { return Err(pt_err::VariantError::UnfoundError {
-                    message: format!("{}", e) 
+                    message: format!("{}", e)
                 });
             }
             }
@@ -181,7 +210,7 @@ define_derive_deftly! {
                     $vpat => Ok($vindex),
                 )
                 e => { return Err(pt_err::VariantError::UnfoundError {
-                    message: format!("{}", *e as usize) 
+                    message: format!("{}", *e as usize)
                 });
             }
             }
@@ -211,6 +240,18 @@ define_derive_deftly! {
     ///         Ex::A => println!("success"),
     ///         _ => panic!("from_discriminant failed")
     ///     }
+    ///     let y = Ex::from_discriminant(1 as usize).unwrap();
+    ///     match y {
+    ///         Ex::B => println!("success"),
+    ///         Ex::A => {
+    ///             eprintln!("It's not B it is A");
+    ///             panic!("from_discriminant failed");
+    ///         },
+    ///         _ => {
+    ///             eprintln!("It's not B");
+    ///             panic!("from_discriminant failed");
+    ///         }
+    ///     }
     ///     Ok(())
     /// }
     /// ```
@@ -218,15 +259,12 @@ define_derive_deftly! {
     impl $ttype {
         /// Get the variant from discriminant
         $tvis fn from_discriminant(v: usize) -> Result<Self, pt_err::VariantError> {
-            $(
-                let $< discriminant_ $vname > = $vpat as usize;
-            )
             match v {
             $(
-                $< discriminant_ $vname > => Ok($vpat),
+                x if $vpat as usize == v => Ok($vpat),
             )
             e => { return Err(pt_err::VariantError::UnfoundError {
-                    message: format!("{}", v) 
+                    message: format!("{}", v)
                 });
             },
         }

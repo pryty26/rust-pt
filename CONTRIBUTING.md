@@ -45,7 +45,8 @@ working Git installation to fetch the code.
    We anticipate that all contributors are professional programmers who fully understand the code.
    And trust me, you write better code than AI, once you've learned the syntax.
    I know learning syntax could be hard, that's why I encourage that people learn syntax using AI.
-   I use AI for generating scripts and checking syntex too. (Yeah I already forgot how can I write python)
+   I use AI for generating scripts, docs and checking syntax too. (Yeah I already forgot how can I write python)
+
 
 
 ## code style we prefer

@@ -48,7 +48,7 @@
 #![deny(clippy::unnecessary_wraps)]
 #![deny(clippy::unused_async)]
 #![deny(clippy::unwrap_used)]
-#![deny(clippy::pedantic)]  // This is not in Arti
+#![deny(clippy::pedantic)] // This is not in Arti
 //! <!-- @@ end lint list
 use anyhow::Result;
 use std::fs::{File, create_dir_all};

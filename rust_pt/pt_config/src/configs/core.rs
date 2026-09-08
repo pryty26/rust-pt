@@ -3,11 +3,15 @@
 // Filename: core.rs
 //======================================================================
 
+use crate::ENV_LOADED;
 use crate::configs::keys::{ClientKey, CommonKey, ServerKey};
 use pt_tracing::rec_panic;
 use serde::{Deserialize, Serialize};
 /// Main Config
 /// But we are not going to serialize it
+/// The unsafe is mostly mention that user must call `init()` function first
+/// therefore the enum itself do not have any unsafe things
+#[allow(clippy::unsafe_derive_deserialize)]
 #[derive(Serialize, Deserialize)]
 #[serde(untagged)]
 #[non_exhaustive]
@@ -35,8 +39,16 @@ pub enum ConfigKey {
 impl ConfigKey {
     /// initialize Config from env
     /// We panic fastly here
+    /// # Panics
+    /// - if the Environment have not set correctly (E.g, both Server and Client settings are set, etc.)
+    /// # Safety
+    /// - User must not interact with environment before calling `init()`
+    /// - `LazyLock` ensure that it would only init one time
+    /// - There is not a thread interacting with environment
+    /// - Do not call: `unsafe { libc::getenv("KEY") }` or similar
     #[must_use]
     pub fn init() -> Self {
+        let () = *ENV_LOADED;
         let common_key = match envy::from_env::<CommonKey>() {
             Err(x) => {
                 rec_panic!(&format!("Invalid or unset CommonKey {x}"));
