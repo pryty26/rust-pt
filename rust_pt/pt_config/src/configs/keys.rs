@@ -425,30 +425,145 @@ pub struct TransportOptions {
     /// Many `TransportOption`
     pub options: Vec<TransportOption>,
 }
+
+/// Splits `s` on unescaped occurrences of `delim`.
+///
+/// A `delim` preceded by an unescaped backslash is treated as a literal
+/// character rather than a separator; the escape sequence is left as-is
+/// in the returned slices. Call `unescape` on each piece afterwards to
+/// resolve `\<char>` sequences.
+#[allow(clippy::string_slice)]
+fn split_unescaped(s: &str, delim: char) -> Vec<&str> {
+    let mut parts = Vec::new();
+    let mut start = 0;
+    let mut escaped = false;
+
+    for (idx, c) in s.char_indices() {
+        if escaped {
+            escaped = false;
+            continue;
+        }
+        if c == '\\' {
+            escaped = true;
+            continue;
+        }
+        if c == delim {
+            parts.push(&s[start..idx]);
+            start = idx + delim.len_utf8();
+        }
+    }
+    parts.push(&s[start..]);
+    parts
+}
+
+/// Finds the byte index of the first unescaped occurrence of `target` in `s`.
+///
+/// Returns `None` if `target` never appears outside of an escape sequence.
+/// The index always lands on a UTF-8 char boundary, so it is safe to slice with.
+fn find_unescaped(s: &str, target: char) -> Option<usize> {
+    let mut escaped = false;
+    for (idx, c) in s.char_indices() {
+        if escaped {
+            escaped = false;
+            continue;
+        }
+        if c == '\\' {
+            escaped = true;
+            continue;
+        }
+        if c == target {
+            return Some(idx);
+        }
+    }
+    None
+}
+
+/// Resolves backslash escape sequences (`\X` -> `X`) in `s`.
+///
+/// The pt-spec only requires `:`, `;` and `\` to be escaped, but any
+/// `\<char>` sequence is resolved here. A trailing lone backslash is dropped.
+fn unescape(s: &str) -> String {
+    let mut out = String::with_capacity(s.len());
+    let mut chars = s.chars();
+    while let Some(c) = chars.next() {
+        if c == '\\' {
+            if let Some(next) = chars.next() {
+                out.push(next);
+            }
+        } else {
+            out.push(c);
+        }
+    }
+    out
+}
+
 impl FromStr for TransportOptions {
     type Err = ConfigError;
-    /// Input: "scramblesuit:key=banana;automata:rule=110;automata:depth=3"
-    /// Output: [
-    ///   `TransportOption` { name: "scramblesuit", settings: {"key": "banana"} },
-    ///   `TransportOption` { name: "automata", settings: {"rule": "110"} },
-    ///   `TransportOption` { name: "automata", settings: {"depth": "3"} },
-    /// ]
+
+    /// Parses the value of `TOR_PT_SERVER_TRANSPORT_OPTIONS`.
+    ///
+    /// The format is a `;`-separated list of `<pt_name>:<key>=<value>`
+    /// segments. `:`, `;` and `\` must be backslash-escaped when they occur
+    /// literally inside a name, key or value. A PT name may appear in more
+    /// than one segment; each occurrence becomes its own `TransportOption`
+    /// entry, in input order (no merging by name).
+    ///
+    /// # Errors
+    ///
+    /// Returns `ConfigError::InvalidConfigErr` if a non-empty segment is
+    /// missing an unescaped `:` (separating the PT name from its options)
+    /// or an unescaped `=` (separating the key from its value).
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use std::str::FromStr;
+    /// use pt_config::configs::keys::TransportOptions;
+    ///
+    /// let parsed = TransportOptions::from_str(
+    ///     "scramblesuit:key=banana;automata:rule=110;automata:depth=3",
+    /// )
+    /// .unwrap();
+    ///
+    /// assert_eq!(parsed.options[0].name, "scramblesuit");
+    /// assert_eq!(parsed.options[0].settings["key"], "banana");
+    /// assert_eq!(parsed.options[1].name, "automata");
+    /// assert_eq!(parsed.options[1].settings["rule"], "110");
+    /// assert_eq!(parsed.options[2].settings["depth"], "3");
+    /// ```
+    ///
+    /// Escaped separators inside a value are preserved literally:
+    ///
+    /// ```
+    /// use std::str::FromStr;
+    /// use pt_config::configs::keys::TransportOptions;
+    ///
+    /// let parsed = TransportOptions::from_str(r"pt:url=a\:b\;c").unwrap();
+    /// assert_eq!(parsed.options[0].settings["url"], "a:b;c");
+    /// ```
+    #[allow(clippy::string_slice)]
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        // scramblesuit:key=banana
-        let options = s
-            .split(';')
-            .filter_map(|x| x.split_once(':'))
-            .map(|(first, second)| {
-                let (second_f, second_s) =
-                    second
-                        .split_once('=')
-                        .ok_or_else(|| ConfigError::InvalidConfigErr {
-                            message: "Invalid TransportOptions Config".to_string(),
-                        })?;
+        let options = split_unescaped(s, ';')
+            .into_iter()
+            .filter(|segment| !segment.is_empty())
+            .map(|segment| {
+                let colon_idx =
+                    find_unescaped(segment, ':').ok_or_else(|| ConfigError::InvalidConfigErr {
+                        message: format!("segment '{segment}' is missing an unescaped ':'"),
+                    })?;
+                let name = unescape(&segment[..colon_idx]);
+                let kv = &segment[colon_idx + 1..];
+
+                let eq_idx =
+                    find_unescaped(kv, '=').ok_or_else(|| ConfigError::InvalidConfigErr {
+                        message: format!("segment '{segment}' is missing an unescaped '='"),
+                    })?;
+                let key = unescape(&kv[..eq_idx]);
+                let value = unescape(&kv[eq_idx + 1..]);
 
                 Ok(TransportOption {
-                    name: first.to_string(),
-                    settings: HashMap::from([(second_f.to_string(), second_s.to_string())]),
+                    name,
+                    settings: HashMap::from([(key, value)]),
                 })
             })
             .collect::<Result<Vec<TransportOption>, ConfigError>>()?;

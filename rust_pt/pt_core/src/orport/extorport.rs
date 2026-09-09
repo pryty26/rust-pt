@@ -158,13 +158,20 @@ impl ExtOrPort {
     /// or `static_cookie` is not equal to "! Extended `ORPort` Auth Cookie !\x0a"
     pub async fn auth_cookie(&self) -> Result<CookieString> {
         let contents = fs::read(self.auth_cookie_file.clone()).await?;
-        let static_cookie: [u8; 32] = contents[0..32].try_into()?;
+
+        let static_cookie: [u8; 32] = contents
+            .get(0..32)
+            .ok_or_else(|| anyhow!("Insufficient data: need 32 bytes"))?
+            .try_into()?;
         // If static_cookie is not equal to "! Extended ORPort Auth Cookie !\x0a"
         // we must raise an Error
         if static_cookie != StaticHeader {
             return Err(ExtOrPortError::InvalidStaticHeader.into());
         }
-        let cookie_string: CookieString = contents[32..64].try_into()?;
+        let cookie_string: CookieString = contents
+            .get(32..64)
+            .ok_or_else(|| anyhow!("Insufficient data: need 32 bytes"))?
+            .try_into()?;
         Ok(cookie_string)
     }
     /// Build `ClientHash`
@@ -395,6 +402,7 @@ impl ExtOrPort {
     pub async fn connect(&mut self) -> Result<TcpStream, ExtOrPortError> {
         let mut connection = TcpStream::connect(self.addr).await?;
         let (mut reader, mut writer) = connection.split();
+        let mut auth_collection: Vec<u8> = Vec::new();
         // When a client (that is to say, a server-side pluggable transport) connects to an Extended ORPort, the server sends:
         // AuthTypes                                   [variable]
         // EndAuthTypes                                [1 octet]
@@ -419,10 +427,16 @@ impl ExtOrPort {
                             writer.write_all(&[auth_type as u8]).await?;
                         },
                         Err(ExtOrPortError::EndAuthTypeUnfoundWithCandidates(auth_cand)) => {
-                            // Maybe user repeats some auth types
-                            // So we should raise an error
-                            PtTracing::warn(&format!("EndAuthTypeUnfound: {auth_cand:?}"))?;
-                            return Err(ExtOrPortError::EndAuthTypeUnfound);
+                            let total_len = auth_cand.len() + auth_collection.len();
+                            if total_len.gt(&256) {
+                                // Maybe user repeats some auth types
+                                // So we should raise an error
+                                PtTracing::warn(&format!("EndAuthTypeUnfound: {auth_cand:?}"))?;
+                                return Err(ExtOrPortError::EndAuthTypeUnfound);
+                            }
+                            // Maybe we only received some slice,
+                            // therefore we should store auth_cand and reread again
+                            auth_collection.extend(auth_cand);
                         },
                         Err(ExtOrPortError::UnsupportedAuthTypes) => {
                             writer.write_all(&[0]).await?;
