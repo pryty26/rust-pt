@@ -3,7 +3,8 @@
 ## Description
 A Rust-based framework for Tor Pluggable Transports, designed for Rust developers. All transport implementations using this framework are modularized under rust-pt/transports/*
 It's pretty surprising that rust-based PT actually doesn't have any other framework which is still maintaining besides this.
-(ptrs last update is on 2024...So I don't think it would be counted as "still maintaining")
+Our aim is to become an Official Tor PT framework
+(ptrs last update is on 2024. So I don't think it would be counted as "still maintaining")
 
 Before reading this project, you may like to read the pt.spec of the Tor [https://spec.torproject.org/pt-spec/index.html]
 
@@ -54,7 +55,7 @@ Oo(〃＾▽＾〃)oO
 1. pryty26 
 (pryty017@proton.me Also (code merged) Contributor of rustls and Arti/Tor have won some small CTFs)
 2. Marat K 
-(https://github.com/PHPCraftdream)
+(https://github.com/PHPCraftdream Author of rust-intel)
 
 
 # *╰(°▽°)╯*

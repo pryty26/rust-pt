@@ -47,6 +47,8 @@ working Git installation to fetch the code.
    I know learning syntax could be hard, that's why I encourage that people learn syntax using AI.
    I use AI for generating scripts, docs and checking syntax too. (Yeah I already forgot how can I write python)
 
+   But, AI security scan is always welcome, but please check the response that AI generates
+
 
 
 ## code style we prefer
@@ -57,6 +59,27 @@ working Git installation to fetch the code.
 2. Remember run "cargo fmt --all" 
   before pushing
 
+3. If you wrote a pre-macro, you must write docs test
+
+4. We have enabled #[deny(clippy::pedantic)] therefore, before pushing, remember run the cargo clippy --all
+
+5. Do not use:
+```rust
+if a > b {}
+```
+
+use:
+```rust
+if a.gt(&b) {}
+```
+
+6. every functions, structures enums and traits must have own docs
+
+7. If you are implementing a protocol, you should paste the url of the protocol's spec
+
+8. For safety, remember:
+  - use constant-time comparison if needed
+  - assume there is an attacker on the intranet with low-privilige
 
 ## Where are some good places to start hacking?
 
