@@ -68,6 +68,16 @@ pub enum ExtOrPortError {
     /// We have not found the supported auth types
     #[error("Unsupported auth types")]
     UnsupportedAuthTypes,
+    /// The server closed the connection during the `ExtOrPort` handshake.
+    ///
+    /// This is usually detected when the underlying tokio read returns 0 (EOF),
+    /// indicating the peer has closed its side.
+    ///
+    /// The `String` field should contain more informations
+    ///
+    /// Caller must not ignore this Error
+    #[error("server closed the connection during the ExtOrPort handshake: {0}")]
+    ServerClosedConnection(String),
     /// Invalid USERADDR
     /// Used for [0x0001] USERADDR: an address:port string that represents the
     /// client's address.
