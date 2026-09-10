@@ -14,7 +14,7 @@ use pt_config::{
     derive_deftly_template_FromString, derive_deftly_template_IntoU8,
 };
 use pt_err::ExtOrPortError;
-use pt_tracing::{prelude::*, rec_panic};
+use pt_tracing::prelude::*;
 use sha2::Sha256;
 use std::net::SocketAddr;
 use std::path::PathBuf;
@@ -123,6 +123,8 @@ pub struct ExtOrPort {
 /// If the client sent an AuthType of value 0, or an AuthType that the server does not support,
 /// the server MUST close the connection.
 /// ```
+/// # NOTE
+/// the discriminant must be as same as PT-spec wrote
 #[repr(u8)]
 #[derive(Deftly, PartialEq, Eq, Copy, Clone)]
 #[derive_deftly(FromDiscriminant, FromString, IntoU8)]
@@ -134,6 +136,7 @@ pub enum AuthTypes {
     /// We define one authentication type: `SAFE_COOKIE`.
     /// Its `AuthType` value is 1.
     SafeCookie = 1,
+    // the discriminant must be as same as PT-spec wrote!!!
 }
 impl ExtOrPort {
     /// ```text
@@ -222,14 +225,17 @@ impl ExtOrPort {
     }
     /// Check if the sender closes the connection, if so,
     /// then we should panic
-    fn check_msg(msg: usize) {
+    fn check_msg(msg: usize) -> Result<(), ExtOrPortError> {
         if msg == 0 {
             // The sender closed connection and we should panic,
             // because if we can not establish a connection,
             // it means we can not send data to the tor server
             // therefore, we must panic to tell the user that we have not estalbished connection
-            rec_panic!("The sender closed connection in ExtOrPort");
+            return Err(ExtOrPortError::ServerClosedConnection(
+                "Tokio read returned 0".to_string(),
+            ));
         }
+        Ok(())
     }
     /// safe cookie authentication
     async fn safe_cookie_authentication(
@@ -267,7 +273,7 @@ impl ExtOrPort {
                     //         "ExtORPort authentication server-to-client hash" | ClientNonce | ServerNonce)
                     //   + ServerNonce is 32 random octets.
                     let mut buf = [0; 64];
-                    Self::check_msg(reader.read_exact(&mut buf).await.map_err(|e| anyhow!(e))?);
+                    reader.read_exact(&mut buf).await.map_err(|e| anyhow!(e))?;
                     let server_nonce: [u8; 32] = buf[32..64].try_into().map_err(|_| {
                         ExtOrPortError::InvalidServerMsg("Invalid ServerNonce".to_string())
                     })?;
@@ -304,7 +310,7 @@ impl ExtOrPort {
                 },
                 SafeCookieState::RecvFinalResp => {
                     let mut buf = [0; 1];
-                    Self::check_msg(reader.read_exact(&mut buf).await?);
+                    Self::check_msg(reader.read_exact(&mut buf).await?)?;
                     match buf {
                         // Status   [1 octet]
                         //
@@ -366,13 +372,7 @@ impl ExtOrPort {
         reader: &mut ReadHalf<'_>,
     ) -> Result<usize, ExtOrPortError> {
         let msg = reader.read(buf).await?;
-        if msg == 0 {
-            // The sender closed connection and we should panic,
-            // because if we can not establish a connection,
-            // it means we can not send data to the tor server
-            // therefore, we must panic to tell the user that we have not estalbished connection
-            rec_panic!("The sender closed connection in ExtOrPort");
-        }
+        Self::check_msg(msg)?;
         Ok(msg)
     }
     /// Establish a `ExtOrPort` connection
@@ -421,7 +421,7 @@ impl ExtOrPort {
                                     self.state = ExtOrPortState::SafeCookieAuthentication;
                                 },
                                 _ => {
-                                    rec_panic!("UnknownAuthTypes");
+                                    return Err(ExtOrPortError::UnsupportedAuthTypes);
                                 },
                             }
                             writer.write_all(&[auth_type as u8]).await?;
@@ -440,10 +440,7 @@ impl ExtOrPort {
                         },
                         Err(ExtOrPortError::UnsupportedAuthTypes) => {
                             writer.write_all(&[0]).await?;
-                            // Server will terminate the connection.
-                            // If we cannot establish connection we cannot forward traffics
-                            // Let's just panic
-                            rec_panic!("UnsupportedAuthTypes");
+                            return Err(ExtOrPortError::UnsupportedAuthTypes);
                         },
                         Err(e) => return Err(e),
                     }

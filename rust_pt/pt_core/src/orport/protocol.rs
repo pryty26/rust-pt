@@ -5,19 +5,19 @@
 
 use super::extorport::ExtOrPort;
 use super::traits::ClientExtOrPortProtocol;
+use crate::variables::{CMD_DONE, CMD_TRANSPORT, CMD_USERADDR};
 use async_trait::async_trait;
 use pt_err::ExtOrPortError;
 use std::net::SocketAddr;
 use std::str::FromStr;
 use tokio::io::AsyncWriteExt;
 use tokio::net::TcpStream;
-
 // For docs to these functions
 // See traits
 #[async_trait]
 impl ClientExtOrPortProtocol for ExtOrPort {
     async fn done(stream: &mut TcpStream) -> Result<(), ExtOrPortError> {
-        let msg = 0x0000_u16.to_be_bytes();
+        let msg = CMD_DONE.to_be_bytes();
         let body_len = 0x0000_u16.to_be_bytes();
         stream.write_all(&msg).await?;
         stream.write_all(&body_len).await?;
@@ -32,7 +32,7 @@ impl ClientExtOrPortProtocol for ExtOrPort {
         // (Current Tor versions may accept other formats, but this is a bug: transports MUST NOT send them.)
         SocketAddr::from_str(&client_addr)
             .map_err(|e| ExtOrPortError::InvalidUserAddr(e.to_string()))?;
-        let msg = 0x0001_u16.to_be_bytes();
+        let msg = CMD_USERADDR.to_be_bytes();
         let body_len = u16::try_from(client_addr.len())
             .map_err(|e| anyhow::anyhow!(e))?
             .to_be_bytes();
@@ -42,7 +42,7 @@ impl ClientExtOrPortProtocol for ExtOrPort {
         Ok(())
     }
     async fn transport(stream: &mut TcpStream, pt_name: String) -> Result<(), ExtOrPortError> {
-        let msg = 0x0002_u16.to_be_bytes();
+        let msg = CMD_TRANSPORT.to_be_bytes();
         let body_len: [u8; 2] = u16::try_from(pt_name.len())
             .map_err(|e| ExtOrPortError::PtNameTooLong(e.to_string()))?
             .to_be_bytes();
