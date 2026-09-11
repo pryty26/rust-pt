@@ -334,7 +334,22 @@ impl ExtOrPort {
     }
     /// Auth types negotiation
     /// len should be the output of reader.read(&mut buf).await?;
-    fn auth_types_neg(buf: AuthNegBuf, len: usize) -> Result<AuthTypes, ExtOrPortError> {
+    ///
+    /// # Args
+    /// - buf: the data that `reader.read(&mut buf).await?` just wrote into `buf`
+    /// - len: the value returned by `reader.read(&mut buf).await?`
+    /// - `auth_collection`: if there is an old authentication that has not yet received all its data,
+    ///   the caller should store the `auth_type` here
+    ///
+    /// # TODO:
+    /// - We directly returned `auth_collection[0]` in this function,
+    ///   but is it reasonable?
+    ///   But we do already checked every `auth_type` candidates are correct
+    fn auth_types_neg(
+        buf: AuthNegBuf,
+        len: usize,
+        auth_collection: &mut Vec<u8>,
+    ) -> Result<AuthTypes, ExtOrPortError> {
         // supported auth types
         let mut sup_buf = Vec::<AuthTypes>::new();
         let mut end_found = false;
@@ -355,15 +370,23 @@ impl ExtOrPort {
                 },
             }
         }
+        let buf = sup_buf.iter().copied().map(u8::from).collect();
         if !end_found {
-            let buf = sup_buf.iter().copied().map(u8::from).collect();
             return Err(ExtOrPortError::EndAuthTypeUnfoundWithCandidates(buf));
         }
         if sup_buf.is_empty() {
             return Err(ExtOrPortError::UnsupportedAuthTypes);
         }
         // Let's just return the first supported auth type
-        Ok(sup_buf[0])
+        auth_collection.extend_from_slice(&buf);
+        if auth_collection.len().gt(&255) {
+            return Err(ExtOrPortError::AuthTypesTooMuch(
+                "the maximum length is 255".to_string(),
+            ));
+        }
+        let first_auth_collection = AuthTypes::from_discriminant(auth_collection[0].into())
+            .map_err(|e| anyhow::anyhow!(e))?;
+        Ok(first_auth_collection)
     }
     /// Function used to reduce repeat code
     /// I used that because some of the authentication type requires the client to send a message first.
@@ -384,9 +407,6 @@ impl ExtOrPort {
     /// - Writing to the socket fails
     /// - The authentication type negotiation fails
     /// - Safe cookie authentication fails
-    ///
-    /// # Panics
-    /// This function will panic if:
     /// - The sender closes the connection during authentication negotiation
     /// - The server does not support any compatible authentication types
     ///
@@ -412,7 +432,7 @@ impl ExtOrPort {
             match self.state {
                 ExtOrPortState::AuthTypesNegotiation => {
                     let msg = Self::get_auth_buf(&mut buf, &mut reader).await?;
-                    match Self::auth_types_neg(buf, msg) {
+                    match Self::auth_types_neg(buf, msg, &mut auth_collection) {
                         Ok(auth_type) => {
                             // NOTE: we may add more variant, and match is more clean here
                             #[allow(clippy::single_match_else)]

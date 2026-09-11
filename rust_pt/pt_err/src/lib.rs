@@ -61,6 +61,9 @@ mod macros;
 #[derive_deftly(OtherFromError)]
 #[non_exhaustive]
 pub enum ExtOrPortError {
+    /// The collection of `AuthType` is greater than limit
+    #[error("AuthTypes is greater than limit:{0}")]
+    AuthTypesTooMuch(String),
     /// The `StaticHeader` is invalid
     #[error("Invalid StaticHeader it should be \"! Extended ORPort Auth Cookie !\x0a\"")]
     InvalidStaticHeader,
