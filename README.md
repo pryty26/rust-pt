@@ -56,7 +56,8 @@ Oo(〃＾▽＾〃)oO
 (pryty017@proton.me Also (code merged) Contributor of rustls and Arti/Tor have won some small CTFs)
 2. Marat K 
 (https://github.com/PHPCraftdream Author of rust-intel)
-
+3. 41_un
+( Author of UAT )
 
 # *╰(°▽°)╯*
 So far, it's not a very polished project and this is not meant to make any money. But watch this space! Just for fun, for freedom, for an open-source and privacy internet!
