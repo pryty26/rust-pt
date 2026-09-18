@@ -633,7 +633,7 @@ impl TryFrom<RawServerKey> for ServerKey {
         }
         if let Some(orport) = raw.TOR_PT_ORPORT {
             // Pluggable transport proxies SHOULD issue a warning
-            // if they are instructed to connect to a non-localhost Extended ORPort.
+            // if they are instructed to connect to a non-localhost ORPort.
             if !orport.ip().is_loopback() {
                 PtTracing::warn(&format!("ORPort is not on localhost: {orport}"))?;
             }

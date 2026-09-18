@@ -4,8 +4,10 @@
 //======================================================================
 
 //! See: (https://spec.torproject.org/ext-orport-spec.html)
+use super::traits::ClientRecvExtOrPortProtocol;
 use crate::variables::StaticHeader;
 use anyhow::{Result, anyhow};
+use async_trait::async_trait;
 use derive_deftly::Deftly;
 use getrandom::fill;
 use hmac::{Hmac, KeyInit, Mac};
@@ -16,12 +18,15 @@ use pt_config::{
 use pt_err::ExtOrPortError;
 use pt_tracing::prelude::*;
 use sha2::Sha256;
+use std::array::TryFromSliceError;
 use std::net::SocketAddr;
 use std::path::PathBuf;
 use tokio::fs;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::TcpStream;
-use tokio::net::tcp::{ReadHalf, WriteHalf};
+use tokio::net::tcp::{OwnedReadHalf, OwnedWriteHalf, ReadHalf, WriteHalf};
+use tokio::sync::mpsc;
+use tokio_util::sync::CancellationToken;
 /// `CookieString`
 pub type CookieString = [u8; 32];
 /// Buffer for `AuthTypes` negotiation (null-terminated u8 list).
@@ -62,9 +67,50 @@ pub enum SafeCookieState {
     /// Receive the final server Response after sending client hash
     RecvFinalResp = 3,
 }
-
-/// Config for `ExtOrPort`
-#[derive(Clone, Deftly, PartialEq, Eq)]
+/// Every docs may be outdated (last update 2026.9.18)
+///
+/// Client-side handle for a Tor Extended `ORPort` (`ExtOrPort`) connection.
+///
+/// `ExtOrPort` bundles the configuration needed to reach a Tor bridge's
+/// Extended `ORPort`, together with the state required to drive the
+/// authentication handshake described in
+/// [the Extended `ORPort` specification].
+///
+/// You can use:
+/// [`ExtOrPort::Builder()`] to build an `ExtOrPort` instance
+///
+/// Do not call `with_reader()` or `with_writer()`; these fields are
+/// managed by the functions of `ExtOrPort`
+/// # Authentication
+///
+/// `SAFE_COOKIE` requires access to the
+/// Tor bridge's cookie file, whose location is controlled by
+/// [`ExtOrPort::auth_cookie_file`].
+///
+/// # Cancellation safety
+///
+/// `ExtOrPort` is **not cancellation safe** during the handshake. If a
+/// future returned by `extorport.connect()` is dropped mid-handshake,
+/// the underlying stream may contain partial frame data and must be
+/// discarded.
+///
+/// # Examples
+///
+/// ```rust
+/// use pt_core::orport::extorport::ExtOrPort;
+/// use anyhow::Result;
+/// #[tokio::main]
+/// async fn main() -> anyhow::Result<()> {
+///     let mut ext_orport = ExtOrPort::builder()
+///         .with_addr("127.0.0.1:8080".parse()?)
+///         .with_auth_cookie_file("/var/lib/tor/extended_orport_auth_cookie".into());
+///     // This will usually fail, because the test server would not be running an ExtOrPort continuousl
+///     let _ = ext_orport.connect().await;
+///     Ok(())
+/// }
+/// ```
+///
+#[derive(Deftly)]
 #[derive_deftly(Builder)]
 #[non_exhaustive]
 pub struct ExtOrPort {
@@ -90,6 +136,12 @@ pub struct ExtOrPort {
     /// Different state for Pt `ExtOrPort`
     #[deftly(default = "ExtOrPortState::AuthTypesNegotiation")]
     state: ExtOrPortState,
+    /// The reader of client's connection to the server
+    #[deftly(default = "None")]
+    reader: Option<OwnedReadHalf>,
+    /// The writer of client's connection to the server
+    #[deftly(default = "None")]
+    writer: Option<OwnedWriteHalf>,
 }
 
 /// Diffrent auth types
@@ -138,6 +190,141 @@ pub enum AuthTypes {
     SafeCookie = 1,
     // the discriminant must be as same as PT-spec wrote!!!
 }
+/// Reply message from the server,
+/// Parties MUST ignore command codes that they do not understand.
+#[derive(Debug, PartialEq, Clone, Eq, Deftly)]
+#[non_exhaustive]
+#[derive_deftly(FromDiscriminant)]
+pub enum ExtOrPortReply {
+    /// 0x1000 — Tor will accept the user's traffic.
+    Okay = 0x1000,
+    /// 0x1001 — Tor does not want more traffic from this address right now.
+    Deny = 0x1001,
+}
+
+/// State machine for receiving the server's replies in the `ExtOrPort`.
+///
+/// Users may use it only if they implement custom handling for receiving
+/// `ExtOrPort` replies.
+///
+/// Otherwise, use
+/// `pt_core::orport::extorport::ExtOrPort` `ExtOrPort.recv_listen()`
+/// for general server responses.
+///
+///
+/// User can freely constract it
+///
+/// ```rust
+/// use pt_core::orport::extorport::ExtOrPortRecvState;
+///
+/// fn main() {
+///     let example = ExtOrPortRecvState::CommandRecognition;
+///     ()
+/// }
+///
+/// ```
+///
+/// We used allow `exhaustive` because let it panic before compiling,
+/// is much better than let it panic during the handshake
+#[allow(clippy::exhaustive_enums)]
+pub enum ExtOrPortRecvState {
+    /// Recognize the Command (E.g., Ok, Deny or Control)
+    CommandRecognition,
+    /// Recognize the Length
+    LengthRecognition,
+    /// Reading body, and forward or parsing it
+    BodyParsing,
+}
+/// Settings for `ExtOrPortRecv`
+#[non_exhaustive]
+pub struct ExtOrPortRecvSettings {
+    /// State machine for Receiving `ExtOrPort` reply
+    pub state: ExtOrPortRecvState,
+    /// Reply type
+    pub reply_type: Option<ExtOrPortReply>,
+}
+#[async_trait]
+impl ClientRecvExtOrPortProtocol for ExtOrPort {
+    async fn recv_listen(
+        &mut self,
+    ) -> Result<
+        (
+            (mpsc::Receiver<ExtOrPortReply>, mpsc::Receiver<u8>),
+            CancellationToken,
+        ),
+        ExtOrPortError,
+    > {
+        // For receiving Server reply, we have to have an already established connection
+        let Some(mut reader) = self.reader.take() else {
+            return Err(ExtOrPortError::StreamMissing);
+        };
+        let token = CancellationToken::new();
+        let recv_token = token.clone();
+        #[allow(unused_mut)]
+        let (tx, mut rx) = mpsc::channel::<ExtOrPortReply>(100);
+        #[allow(unused)] // We may need to forward traffic in next time
+        let (u8_tx, mut u8_rx) = mpsc::channel::<u8>(1024);
+        PtTracing::info("ExtOrPort Receiving Server Response")?;
+        tokio::spawn(async move {
+            tokio::select! {
+                () = recv_token.cancelled() => {}
+                _ = async {
+                    let mut recv_settings = ExtOrPortRecvSettings {
+                        state: ExtOrPortRecvState::CommandRecognition,
+                        reply_type: None,
+                    };
+                    #[allow(unreachable_patterns)] // We will let recv_token to end that
+                    loop {
+                        match recv_settings.state {
+                            ExtOrPortRecvState::CommandRecognition => {
+                                let mut buf = [0_u8; 2];
+                                let _ = reader.read_exact(&mut buf).await?;
+                                let command: ExtOrPortReply = ExtOrPortReply::from_discriminant(usize::from_be_bytes(
+                                    buf[0..2].try_into().map_err(|e: TryFromSliceError| anyhow!(e))?,
+                                ))
+                                .map_err(|e| anyhow!(e))?;
+                                tx.send(command.clone()).await.map_err(|e| anyhow!(e))?;
+                                recv_settings.reply_type = Some(command);
+                                recv_settings.state = ExtOrPortRecvState::LengthRecognition;
+                            }
+                            ExtOrPortRecvState::LengthRecognition => {
+                                let mut buf = [0_u8; 2];
+                                let _ = reader.read_exact(&mut buf).await?;
+                                // [0x1000] OKAY: Send the user's traffic. (body ignored)
+                                // [0x1001] DENY: Tor would prefer not to get more traffic from
+                                //   this address for a while. (body ignored)
+                                let length = u16::from_be_bytes(
+                                    buf[0..2].try_into().map_err(|e: TryFromSliceError| anyhow!(e))?,
+                                );
+                                // We may add more conditions, and match is much clearer in here
+                                #[allow(clippy::single_match)]
+                                match recv_settings.reply_type {
+                                    Some(ExtOrPortReply::Okay | ExtOrPortReply::Deny)  => {
+                                        // Read the all bytes for cleaning the connection
+                                        // But ignore the body
+                                            let mut body = vec![0_u8; length as usize];
+                                        reader.read_exact(&mut body).await?;
+                                    }
+                                    _ => {
+
+                                    }
+                                }
+                            }
+                            ExtOrPortRecvState::BodyParsing => {
+                                // Currently all the body should be ignored, therefore we have nothing to do
+                            }
+                        }
+                    }
+                    // We need a Ok(...) for making compiler know what is the return type
+                    #[allow(unreachable_code)] // We will let recv_token to end that
+                    Ok::<(), ExtOrPortError>(())
+                } => {}
+            }
+        });
+        Ok(((rx, u8_rx), token))
+    }
+}
+
 impl ExtOrPort {
     /// ```text
     /// Cookie-file format
@@ -419,7 +606,7 @@ impl ExtOrPort {
     /// # Reuse ability
     /// This method is **not Reusable**
     /// ones it returns Error, this method cannot be reused
-    pub async fn connect(&mut self) -> Result<TcpStream, ExtOrPortError> {
+    pub async fn connect(&mut self) -> Result<(), ExtOrPortError> {
         let mut connection = TcpStream::connect(self.addr).await?;
         let (mut reader, mut writer) = connection.split();
         let mut auth_collection: Vec<u8> = Vec::new();
@@ -472,6 +659,9 @@ impl ExtOrPort {
                 },
             }
         }
-        Ok(connection)
+        let (reader, writer) = connection.into_split();
+        self.writer = Some(writer);
+        self.reader = Some(reader);
+        Ok(())
     }
 }

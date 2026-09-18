@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <title>rust-pt | A Rust framework for Tor Pluggable Transports</title>
+  <meta name="description" content="A Rust-based framework for Tor Pluggable Transports." />
+
+  <!-- Open Graph -->
+  <meta property="og:title" content="rust-pt" />
+  <meta property="og:description" content="A Rust-based framework for Tor Pluggable Transports." />
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://rust-pt.us.ci/" />
+
+  <!-- Twitter -->
+  <meta name="twitter:card" content="summary" />
+  <meta name="twitter:title" content="rust-pt" />
+  <meta name="twitter:description" content="A Rust-based framework for Tor Pluggable Transports." />
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <style>
+    /* 渐入动画 */
+    @keyframes fadeInDown {
+      from { opacity: 0; transform: translateY(-20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+    }
+    @keyframes slideInLeft {
+      from { opacity: 0; transform: translateX(-30px); }
+      to { opacity: 1; transform: translateX(0); }
+    }
+    
+    .animate-fade-in-down { animation: fadeInDown 0.8s ease-out forwards; }
+    .animate-fade-in-up { animation: fadeInUp 0.8s ease-out forwards; }
+    .animate-slide-in { animation: slideInLeft 0.6s ease-out forwards; }
+    .animate-pulse-custom { animation: pulse 2s infinite; }
+    
+    .delay-100 { animation-delay: 0.1s; }
+    .delay-200 { animation-delay: 0.2s; }
+    .delay-300 { animation-delay: 0.3s; }
+    .delay-400 { animation-delay: 0.4s; }
+    .delay-500 { animation-delay: 0.5s; }
+    .delay-600 { animation-delay: 0.6s; }
+    .delay-700 { animation-delay: 0.7s; }
+    .delay-800 { animation-delay: 0.8s; }
+    
+    /* 初始隐藏状态 */
+    .opacity-0 { opacity: 0; }
+    
+    /* 悬浮效果 */
+    .hover-lift { transition: transform 0.2s ease, box-shadow 0.2s ease; }
+    .hover-lift:hover { transform: translateY(-4px); box-shadow: 0 10px 25px rgba(99, 102, 241, 0.3); }
+    
+    .github-btn:hover { 
+      transform: scale(1.05);
+      box-shadow: 0 8px 30px rgba(235, 39, 39, 0.4);
+    }
+    
+    /* 卡片浮起效果 */
+    .card-hover { 
+      transition: transform 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+      border-color: #334155 !important;
+    }
+    .card-hover:hover { 
+      transform: translateY(-8px); 
+      border-color: #3b82f6 !important;
+      box-shadow: 0 12px 40px rgba(59, 130, 246, 0.25);
+    }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-200 font-sans antialiased min-h-screen flex flex-col">
+
+  <main class="flex-1 flex flex-col items-center justify-center px-6 py-20 text-center">
+
+    <!-- 标题渐入动画 -->
+    <h1 class="text-6xl md:text-8xl font-bold tracking-tight mb-6 animate-fade-in-down opacity-0">
+      <span class="text-blue-400">rust</span><span class="text-red-400">-pt</span>
+    </h1>
+
+    <p class="text-xl md:text-2xl text-slate-400 max-w-2xl mb-4 animate-fade-in-up opacity-0 delay-200">
+      A Rust-based framework for Tor Pluggable Transports.
+    </p>
+
+    <p class="text-base md-lg text-slate-500 max-w-xl mb-12 animate-fade-in-up opacity-0 delay-300">
+      The only actively maintained Rust PT framework.<br />
+      Typed errors. Modern architecture. Clippy-pedantic clean.
+    </p>
+
+    <!-- 欢迎新贡献者横幅 -->
+    <div class="mb-10 animate-fade-in-up opacity-0 delay-400">
+      <p class="text-lg text-blue-400 font-semibold animate-pulse-custom">
+        ✨ We welcome new contributors and stars! ⭐ ✨
+      </p>
+    </div>
+
+    <!-- 按钮区域：GitLab + GitHub更显眼 -->
+    <div class="flex gap-4 flex-wrap justify-center mb-16">
+      <!-- Tor GitLab -->
+      <a href="https://gitlab.torproject.org/pryty26/rust-pt"
+         class="px-8 py-4 bg-blue-500 hover:bg-blue-400 text-slate-950 font-semibold rounded-lg transition text-lg hover-lift animate-fade-in-up opacity-0 delay-500">
+        🧅 Tor GitLab →
+      </a>
+      <!-- GitHub - 更显眼，红色 + 边框高亮 + star徽章 -->
+      <a href="https://github.com/pryty26/rust-pt"
+         class="github-btn px-8 py-4 bg-[#eb2727] hover:bg-[#ff4444] text-white font-semibold rounded-lg transition text-lg border-2 border-red-500 hover:border-red-300 animate-fade-in-up opacity-0 delay-600 flex items-center gap-3">
+        <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+          <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.065 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405 1.02 0 2.04.135 3 .405 2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.285 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/>
+        </svg>
+        Star on GitHub
+      </a>
+    </div>
+
+    <!-- About / Why this matters -->
+    <section class="max-w-3xl w-full text-left mb-16">
+      <h2 class="text-2xl font-bold mb-6 text-center text-slate-300 animate-slide-in opacity-0 delay-700">
+        Why this matters?
+      </h2>
+      <ol class="space-y-3 text-slate-400">
+        <li class="flex gap-3 card-hover p-3 rounded-lg animate-fade-in-up opacity-0 delay-100">
+          <span class="text-blue-400 font-mono">1.</span>
+          <span>The core code is human-written, quality guaranteed.</span>
+        </li>
+        <li class="flex gap-3 card-hover p-3 rounded-lg animate-fade-in-up opacity-0 delay-200">
+          <span class="text-blue-400 font-mono">2.</span>
+          <span>I am a contributor to Arti and rustls, so maintenance is guaranteed. tor-ptmgr is indeed a Rust implementation related to Tor, but it is a manager for the Tor server side and cannot implement PTs — though it is what you interact with. I am also a contributor to ptmgr and have read its source code; ptmgr is the Arti part I know best.</span>
+        </li>
+        <li class="flex gap-3 card-hover p-3 rounded-lg animate-fade-in-up opacity-0 delay-300">
+          <span class="text-blue-400 font-mono">3.</span>
+          <span>Tor officially expressed the need for a Rust framework.</span>
+        </li>
+        <li class="flex gap-3 card-hover p-3 rounded-lg animate-fade-in-up opacity-0 delay-400">
+          <span class="text-blue-400 font-mono">4.</span>
+          <span>ptrs itself was never finished, and it stopped being maintained long ago, so it is unusable.</span>
+        </li>
+        <li class="flex gap-3 card-hover p-3 rounded-lg animate-fade-in-up opacity-0 delay-500">
+          <span class="text-blue-400 font-mono">5.</span>
+          <span>Unified architecture makes writing PTs in Rust KISS.</span>
+        </li>
+        <li class="flex gap-3 card-hover p-3 rounded-lg animate-fade-in-up opacity-0 delay-600">
+          <span class="text-blue-400 font-mono">6.</span>
+          <span>Reviewed by the authors of UAT (a QUIC-based PT) and ptrs-gesher.</span>
+        </li>
+        <li class="flex gap-3 card-hover p-3 rounded-lg animate-fade-in-up opacity-0 delay-700">
+          <span class="text-blue-400 font-mono">7.</span>
+          <span>Already publicly requested review on the mailing list. Some community members volunteered to review. Anti-censorship expressed interest, but due to workload, no review date can be guaranteed at this time.</span>
+        </li>
+        <li class="flex gap-3 card-hover p-3 rounded-lg animate-fade-in-up opacity-0 delay-800">
+          <span class="text-blue-400 font-mono">8.</span>
+          <span>ptrs-gesher makes heavy use of AI. While its authors consider AI-driven development acceptable, I hold a different opinion — and if you care about AI, that is another reason. Besides, ptrs-gesher's framework is not ready yet: it is currently more of a collection of PTs than a framework, and you cannot use ready-made features such as ExtOrPort.</span>
+        </li>
+      </ol>
+    </section>
+
+    <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-4 max-w-5xl w-full text-left mb-16">
+      <div class="p-5 border border-slate-800 rounded-lg card-hover animate-fade-in-up opacity-0 delay-500">
+        <div class="text-blue-400 font-mono text-xs mb-2">pt_err</div>
+        <div class="text-sm text-slate-400">Typed errors + derive macros</div>
+      </div>
+      <div class="p-5 border border-slate-800 rounded-lg card-hover animate-fade-in-up opacity-0 delay-600">
+        <div class="text-blue-400 font-mono text-xs mb-2">pt_tracing</div>
+        <div class="text-sm text-slate-400">PT-spec-compliant logging</div>
+      </div>
+      <div class="p-5 border border-slate-800 rounded-lg card-hover animate-fade-in-up opacity-0 delay-700">
+        <div class="text-blue-400 font-mono text-xs mb-2">pt_config</div>
+        <div class="text-sm text-slate-400">Env parsing + Config validation + derive macros</div>
+      </div>
+      <div class="p-5 border border-slate-800 rounded-lg card-hover animate-fade-in-up opacity-0 delay-800">
+        <div class="text-blue-400 font-mono text-xs mb-2">pt_core</div>
+        <div class="text-sm text-slate-400">ExtORPort + Other common implementation</div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- Mission statement, Tor-style -->
+  <section class="border-t border-slate-900 py-12 px-6 text-center animate-fade-in-up opacity-0 delay-600">
+    <h2 class="text-sm font-bold tracking-widest text-slate-500 mb-4">MISSION</h2>
+    <p class="max-w-2xl mx-auto text-slate-400 text-sm">
+      To make writing Tor Pluggable Transports in Rust simple, safe, and maintainable —
+      and to keep that tooling free, open, and human-written.
+    </p>
+  </section>
+
+  <footer class="py-8 px-6 text-center text-xs text-slate-600 border-t border-slate-900 animate-fade-in-up opacity-0 delay-800">
+    <p class="mb-3 italic text-slate-500">
+      "Said no more counting dollars — we would be counting stars."
+    </p>
+    <p class="mb-2 space-x-3">
+      <a href="https://gitlab.torproject.org/pryty26/rust-pt" class="hover:text-blue-400 transition">Tor GitLab 🧅</a>
+      <span>·</span>
+      <a href="https://codeberg.org/pryty26/rust-pt" class="hover:text-blue-400 transition">Codeberg</a>
+      <span>·</span>
+      <a href="https://github.com/pryty26/rust-pt" class="hover:text-red-400 transition font-semibold">GitHub ⭐</a>
+    </p>
+    <p class="text-slate-700">
+      Apache-2.0 · Human rights before national sovereignty · No AI training
+    </p>
+  </footer>
+
+</body>
+</html>

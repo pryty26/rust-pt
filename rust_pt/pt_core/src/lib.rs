@@ -58,3 +58,8 @@ pub mod variables;
 
 /// Init the Pt
 pub mod init;
+
+/// To use all the traits
+pub mod prelude {
+    pub use crate::orport::traits::*;
+}
