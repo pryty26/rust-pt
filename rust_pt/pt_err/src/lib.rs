@@ -61,6 +61,9 @@ mod macros;
 #[derive_deftly(OtherFromError)]
 #[non_exhaustive]
 pub enum ExtOrPortError {
+    /// The stream is `None`. Therefore, we cannot receive the server's reply
+    #[error("The stream is `None`. Therefore, we cannot receive the server's reply")]
+    StreamMissing,
     /// The collection of `AuthType` is greater than limit
     #[error("AuthTypes is greater than limit:{0}")]
     AuthTypesTooMuch(String),

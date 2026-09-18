@@ -3,9 +3,13 @@
 // Filename: traits.rs
 //======================================================================
 
+use super::extorport::ExtOrPortReply;
 use async_trait::async_trait;
 use pt_err::ExtOrPortError;
 use tokio::net::TcpStream;
+use tokio::sync::mpsc;
+use tokio_util::sync::CancellationToken;
+/// ```text
 /// Protocol
 ///
 /// The extended server port protocol is as follows:
@@ -36,9 +40,8 @@ use tokio::net::TcpStream;
 ///      [0x1002] CONTROL: (Not used)
 ///
 ///   Parties MUST ignore command codes that they do not understand.
+/// ```
 
-// These protocol's sending shouldn't contain any error,
-// thus Result<_, _> is not needed
 #[async_trait]
 pub trait ClientExtOrPortProtocol {
     /// [0x0000] DONE: There is no more information to give. The next
@@ -51,4 +54,31 @@ pub trait ClientExtOrPortProtocol {
     ///      [0x0002] TRANSPORT: a string of the name of the pluggable
     ///        transport currently in effect on the connection.
     async fn transport(stream: &mut TcpStream, pt_name: String) -> Result<(), ExtOrPortError>;
+}
+
+/// ```text
+/// Replies sent from tor to the proxy are:
+///
+///     [0x1000] OKAY: Send the user's traffic. (body ignored)
+///
+///     [0x1001] DENY: Tor would prefer not to get more traffic from
+///       this address for a while. (body ignored)
+///
+///     [0x1002] CONTROL: (Not used)
+///
+///   Parties MUST ignore command codes that they do not understand.
+/// ```
+#[async_trait]
+pub trait ClientRecvExtOrPortProtocol {
+    /// Spawn a `tokio` task that listen to the Server's reply
+    /// The caller cannot await it, because the task must not return anything
+    async fn recv_listen(
+        &mut self,
+    ) -> Result<
+        (
+            (mpsc::Receiver<ExtOrPortReply>, mpsc::Receiver<u8>),
+            CancellationToken,
+        ),
+        ExtOrPortError,
+    >;
 }
