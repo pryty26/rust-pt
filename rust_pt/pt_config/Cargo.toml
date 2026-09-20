@@ -5,7 +5,7 @@ edition.workspace = true
 license.workspace = true
 repository.workspace = true
 description = "A library for Rust-Based Pt config parsing"
-readme = "README.md"
+readme.workspace = true
 keywords.workspace = true
 categories.workspace = true
 [dependencies]
@@ -16,15 +16,15 @@ derive-deftly = { workspace = true }
 
 ## All errors
 # Local development only
-pt_err = { path = "../pt_err" }
+# pt_err = { path = "../pt_err" }
 # Use this when publishing to crates.io
-# pt_err = { workspace = true }
+pt_err = { workspace = true }
 
 # logs
 # Local development only
-pt_tracing = { path = "../pt_tracing" }
+# pt_tracing = { path = "../pt_tracing" }
 # Use this when publishing to crates.io
-# pt_tracing = { workspace = true }
+pt_tracing = { workspace = true }
 
 once_cell = { workspace = true }
 dotenvy = { workspace = true }

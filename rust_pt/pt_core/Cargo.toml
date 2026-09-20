@@ -5,19 +5,19 @@ edition.workspace = true
 license.workspace = true
 repository.workspace = true
 description = "A library for Rust-Based Pt development"
-readme = "README.md"
+readme.workspace = true
 keywords.workspace = true
 categories.workspace = true
 [dependencies]
 # All errors
-# pt_err = { workspace = true }
-pt_err = { path = "../pt_err" }
+pt_err = { workspace = true }
+# pt_err = { path = "../pt_err" }
 # logs
-pt_tracing = { path = "../pt_tracing" }
-# pt_tracing = { workspace = true }
+# pt_tracing = { path = "../pt_tracing" }
+pt_tracing = { workspace = true }
 # Configuration parsing
-# pt_config = { workspace = true }
-pt_config = { path = "../pt_config" }
+pt_config = { workspace = true }
+# pt_config = { path = "../pt_config" }
 derive-deftly = { workspace = true }
 tokio = { workspace = true }
 anyhow = { workspace = true }
