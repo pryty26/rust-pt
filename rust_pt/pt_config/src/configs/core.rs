@@ -5,7 +5,7 @@
 
 use crate::ENV_LOADED;
 use crate::configs::keys::{ClientKey, CommonKey, ServerKey};
-use pt_tracing::rec_panic;
+use pt_tracing::{prelude::*, rec_panic};
 use serde::{Deserialize, Serialize};
 /// Main Config
 /// But we are not going to serialize it
@@ -14,7 +14,7 @@ use serde::{Deserialize, Serialize};
 #[allow(clippy::unsafe_derive_deserialize)]
 #[derive(Serialize, Deserialize)]
 #[serde(untagged)]
-#[non_exhaustive]
+#[allow(clippy::exhaustive_enums)] // We would not change that, unless pt-spec changes
 pub enum ConfigKey {
     /// Config which is needed in Server Side
     Server {
@@ -37,6 +37,31 @@ pub enum ConfigKey {
 }
 
 impl ConfigKey {
+    /// Get the Common key reference
+    #[must_use]
+    pub fn common_key(&self) -> &CommonKey {
+        #[allow(clippy::match_same_arms)]
+        match self {
+            ConfigKey::Server { common_key, .. } => common_key,
+            ConfigKey::Client { common_key, .. } => common_key,
+        }
+    }
+    /// Get whether it's Server
+    #[must_use]
+    pub fn is_server(&self) -> bool {
+        match self {
+            ConfigKey::Server { .. } => true,
+            ConfigKey::Client { .. } => false,
+        }
+    }
+    /// Get whether it's cient
+    #[must_use]
+    pub fn is_client(&self) -> bool {
+        match self {
+            ConfigKey::Server { .. } => false,
+            ConfigKey::Client { .. } => true,
+        }
+    }
     /// initialize Config from env
     /// We panic fastly here
     /// # Panics
@@ -51,7 +76,9 @@ impl ConfigKey {
         let () = *ENV_LOADED;
         let common_key = match envy::from_env::<CommonKey>() {
             Err(x) => {
-                rec_panic!(&format!("Invalid or unset CommonKey {x}"));
+                let msg = format!("Invalid or unset CommonKey {x}");
+                PtTracing::env_error(&msg);
+                rec_panic!(&msg);
             },
             Ok(common_key) => common_key,
         };
@@ -65,12 +92,15 @@ impl ConfigKey {
                 common_key,
             },
             (Err(x), Err(y)) => {
-                rec_panic!(&format!(
+                let msg = format!(
                     "Invalid or unset ServerKey and ClientKey 
                     You must set one of them:  {x} {y}",
-                ));
+                );
+                PtTracing::env_error(&msg);
+                rec_panic!(&msg);
             },
             (Ok(_), Ok(_)) => {
+                PtTracing::env_error("ServerKey and ClientKey are both set. You may only set one");
                 rec_panic!("ServerKey and ClientKey are both set. You may only set one");
             },
         }

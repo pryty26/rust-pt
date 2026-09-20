@@ -63,3 +63,7 @@ pub mod variable;
 pub(crate) static ENV_LOADED: std::sync::LazyLock<()> = std::sync::LazyLock::new(|| {
     let _ = dotenv().ok();
 });
+/// A prelude module that could be useful
+pub mod prelude {
+    pub use crate::configs::core::ConfigKey;
+}

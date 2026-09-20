@@ -57,7 +57,7 @@ use thiserror::Error;
 /// Diffrent macros for Error
 mod macros;
 /// Errors which is related with `ExtOrPort`
-#[derive(Debug, Error, PartialEq, Deftly)]
+#[derive(Debug, Error, PartialEq, Deftly, Clone)]
 #[derive_deftly(OtherFromError)]
 #[non_exhaustive]
 pub enum ExtOrPortError {
@@ -101,6 +101,9 @@ pub enum ExtOrPortError {
     /// Invalid server hash, client must terminate the connection
     #[error("Invalid server hash")]
     InvalidServerHash,
+    /// Insufficient cookie file length
+    #[error("Insufficient cookie file length")]
+    InsufficientCookieFile,
     /// Server sent a message which indicates that Client hash validation failed
     #[error("Server sent a message which indicates that Client hash validation failed")]
     InvalidClientHash,
@@ -113,6 +116,24 @@ pub enum ExtOrPortError {
     Other(String),
 }
 
+/// Errors for `pt_core::Pt`
+#[derive(Debug, Error, PartialEq, Deftly, Clone)]
+#[derive_deftly(OtherFromError)]
+#[non_exhaustive]
+pub enum PtError {
+    /// Pt is never inited
+    #[error("PtNotInitialized {0}")]
+    PtNotInitialized(String),
+    /// `ExtOrPort` is not set
+    #[error("ExtOrPort unfound {0}")]
+    ExtOrPortUnfound(String),
+    #[error("ExtOrPortError: {0}")]
+    /// Error for `ExtOrPortError`
+    ExtOrPort(#[from] ExtOrPortError),
+    /// Other errors
+    #[error("{0}")]
+    Other(String),
+}
 /// Errors which could cause during the Config parsing.
 #[derive(Debug, Error, PartialEq, Deftly)]
 #[derive_deftly(OtherFromError)]
