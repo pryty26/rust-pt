@@ -4,17 +4,17 @@ members = [
     "rust_pt/pt_tracing",
     "rust_pt/pt_config",
     "rust_pt/pt_core",
-    "transports/reality-pt",
+    "transports/reality-pt", "transports/aspt",
 ]
 resolver = "2"
 
 [workspace.package]
-version     = "0.0.0-alpha.2"
+version     = "0.0.0-alpha.3"
 edition     = "2024"
 license     = "Apache-2.0"
 repository  = "https://gitlab.torproject.org/pryty26/rust-pt"
 readme      = "README.md"
-keywords    = ["tor", "proxy", "pluggable transport"]
+keywords    = ["tor", "proxy", "pluggable-transport", "anti-censorship", "framework"]
 categories  = ["network-programming"]
 
 [workspace.metadata]
@@ -22,10 +22,10 @@ name = "rust-pt"
 
 [workspace.dependencies]
 # Internal crates
-pt_err     = { version = "0.0.0-alpha.2" }
-pt_core    = { version = "0.0.0-alpha.2" }
-pt_config  = { version = "0.0.0-alpha.2" }
-pt_tracing = { version = "0.0.0-alpha.2" }
+pt_err     = { version = "0.0.0-alpha.3" }
+pt_core    = { version = "0.0.0-alpha.3" }
+pt_config  = { version = "0.0.0-alpha.3" }
+pt_tracing = { version = "0.0.0-alpha.3" }
 
 # Core utilities
 anyhow          = "1.0.104"
