@@ -7,8 +7,6 @@ use super::extorport::ExtOrPortReply;
 use async_trait::async_trait;
 use pt_err::ExtOrPortError;
 use tokio::net::TcpStream;
-use tokio::sync::mpsc;
-use tokio_util::sync::CancellationToken;
 /// ```text
 /// Protocol
 ///
@@ -70,15 +68,9 @@ pub trait ClientExtOrPortProtocol {
 /// ```
 #[async_trait]
 pub trait ClientRecvExtOrPortProtocol {
-    /// Spawn a `tokio` task that listen to the Server's reply
-    /// The caller cannot await it, because the task must not return anything
-    async fn recv_listen(
-        &mut self,
-    ) -> Result<
-        (
-            (mpsc::Receiver<ExtOrPortReply>, mpsc::Receiver<u8>),
-            CancellationToken,
-        ),
-        ExtOrPortError,
-    >;
+    /// Receive a single reply from the server.
+    ///
+    /// The reply is read in three steps (command, body length, body) and
+    /// returned once the whole frame has been consumed.
+    async fn recv_listen(&mut self) -> Result<ExtOrPortReply, ExtOrPortError>;
 }

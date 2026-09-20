@@ -55,11 +55,73 @@
 pub mod orport;
 /// Variables
 pub mod variables;
+use derive_deftly::Deftly;
+use pt_config::derive_deftly_template_Builder;
+use pt_config::prelude::*;
+use pt_err::PtError;
+use pt_tracing::prelude::*;
 
+use crate::orport::extorport::ExtOrPort;
 /// Init the Pt
 pub mod init;
 
 /// To use all the traits
 pub mod prelude {
     pub use crate::orport::traits::*;
+}
+
+/// The core config for PT
+/// User have to call the builder to build that
+/// ```rust
+/// use pt_core::Pt;
+/// use pt_tracing::{prelude::*};
+/// fn main() {
+///     let pt = Pt::builder()
+///         .with_severity(SEVERITY::INFO);
+///     // Then, user can call try_init(),
+///     // but since we are not setting the env config in docs test,
+///     // so just leave it for now
+///     // pt.try_init();
+/// }
+///
+/// ```
+#[derive(Deftly)]
+#[derive_deftly(Builder)]
+#[non_exhaustive]
+pub struct Pt {
+    /// The log severity
+    #[deftly(default = "SEVERITY::NOTICE")]
+    severity: SEVERITY,
+    /// The Config key, user must not call `with_config_key(...)` to change that
+    /// User must call `try_init()` to get the Config Key
+    #[deftly(default = "None")]
+    config_key: Option<ConfigKey>,
+    /// Optional `ExtOrPort` connection
+    /// user must not call `with_extorport` to set that
+    /// please call `Pt.try_extorport()`
+    #[deftly(default = "None")]
+    extorport: Option<ExtOrPort>,
+}
+
+impl Pt {
+    /// get self
+    /// # Errors
+    /// if Pt is not initialized
+    pub(crate) fn get(&self) -> Result<&ConfigKey, PtError> {
+        self.config_key
+            .as_ref()
+            .ok_or_else(|| PtError::PtNotInitialized("Please call Pt.try_init()".to_string()))
+    }
+    /// Check whether config key of Pt is `ServerKey`
+    /// # Errors
+    /// if Pt is not initialized
+    pub fn is_server(&self) -> Result<bool, PtError> {
+        Ok(self.get()?.is_server())
+    }
+    /// Check whether config key of Pt is `ClientKey`
+    /// # Errors
+    /// if Pt is not initialized
+    pub fn is_client(&self) -> Result<bool, PtError> {
+        Ok(self.get()?.is_client())
+    }
 }
