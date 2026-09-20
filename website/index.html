@@ -19,7 +19,7 @@
   <meta name="twitter:description" content="A Rust-based framework for Tor Pluggable Transports." />
 
   <script src="https://cdn.tailwindcss.com"></script>
-  
+
   <style>
     /* 渐入动画 */
     @keyframes fadeInDown {
@@ -38,12 +38,12 @@
       from { opacity: 0; transform: translateX(-30px); }
       to { opacity: 1; transform: translateX(0); }
     }
-    
+
     .animate-fade-in-down { animation: fadeInDown 0.8s ease-out forwards; }
     .animate-fade-in-up { animation: fadeInUp 0.8s ease-out forwards; }
     .animate-slide-in { animation: slideInLeft 0.6s ease-out forwards; }
     .animate-pulse-custom { animation: pulse 2s infinite; }
-    
+
     .delay-100 { animation-delay: 0.1s; }
     .delay-200 { animation-delay: 0.2s; }
     .delay-300 { animation-delay: 0.3s; }
@@ -52,29 +52,50 @@
     .delay-600 { animation-delay: 0.6s; }
     .delay-700 { animation-delay: 0.7s; }
     .delay-800 { animation-delay: 0.8s; }
-    
+
     /* 初始隐藏状态 */
     .opacity-0 { opacity: 0; }
-    
+
     /* 悬浮效果 */
     .hover-lift { transition: transform 0.2s ease, box-shadow 0.2s ease; }
     .hover-lift:hover { transform: translateY(-4px); box-shadow: 0 10px 25px rgba(99, 102, 241, 0.3); }
-    
-    .github-btn:hover { 
+
+    .github-btn:hover {
       transform: scale(1.05);
       box-shadow: 0 8px 30px rgba(235, 39, 39, 0.4);
     }
-    
+
     /* 卡片浮起效果 */
-    .card-hover { 
+    .card-hover {
       transition: transform 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
       border-color: #334155 !important;
     }
-    .card-hover:hover { 
-      transform: translateY(-8px); 
+    .card-hover:hover {
+      transform: translateY(-8px);
       border-color: #3b82f6 !important;
       box-shadow: 0 12px 40px rgba(59, 130, 246, 0.25);
     }
+
+    /* 代码块样式 */
+    pre {
+      text-align: left;
+      background: #0f172a;
+      border: 1px solid #1e293b;
+      border-radius: 0.5rem;
+      padding: 1rem 1.25rem;
+      overflow-x: auto;
+      font-size: 0.85rem;
+      line-height: 1.6;
+    }
+    pre code {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      color: #cbd5e1;
+    }
+    .tok-key { color: #f472b6; }
+    .tok-str { color: #86efac; }
+    .tok-cmt { color: #64748b; }
+    .tok-fn  { color: #93c5fd; }
+    .tok-ty  { color: #fcd34d; }
   </style>
 </head>
 <body class="bg-slate-950 text-slate-200 font-sans antialiased min-h-screen flex flex-col">
@@ -127,44 +148,46 @@
       <ol class="space-y-3 text-slate-400">
         <li class="flex gap-3 card-hover p-3 rounded-lg animate-fade-in-up opacity-0 delay-100">
           <span class="text-blue-400 font-mono">1.</span>
-          <span>The core code is human-written, quality guaranteed.</span>
+          <span><b class="text-slate-300">Human-written core.</b> The core code is hand-written, so quality is guaranteed.</span>
         </li>
         <li class="flex gap-3 card-hover p-3 rounded-lg animate-fade-in-up opacity-0 delay-200">
           <span class="text-blue-400 font-mono">2.</span>
-          <span>I am a contributor to Arti and rustls, so maintenance is guaranteed. tor-ptmgr is indeed a Rust implementation related to Tor, but it is a manager for the Tor server side and cannot implement PTs — though it is what you interact with. I am also a contributor to ptmgr and have read its source code; ptmgr is the Arti part I know best.
-            <b> Note that all the criticisms are only in the technical field. I respect every developer that I meantioned
+          <span><b class="text-slate-300">Maintained by someone who knows Tor.</b> I am a contributor to Arti and rustls, so maintenance is guaranteed. tor-ptmgr is indeed a Rust implementation related to Tor, but it is a manager for the Tor server side and cannot implement PTs — though it is what you interact with. I am also a contributor to ptmgr and have read its source code; ptmgr is the Arti part I know best.
+            <b> Note that all the criticisms are only in the technical field. I respect every developer that I mentioned.</b>
           </span>
         </li>
         <li class="flex gap-3 card-hover p-3 rounded-lg animate-fade-in-up opacity-0 delay-300">
           <span class="text-blue-400 font-mono">3.</span>
-          <span>Tor officially expressed the need for a Rust framework.</span>
+          <span><b class="text-slate-300">Tor officially asked for it.</b> Tor officially expressed the need for a Rust framework.</span>
         </li>
         <li class="flex gap-3 card-hover p-3 rounded-lg animate-fade-in-up opacity-0 delay-400">
           <span class="text-blue-400 font-mono">4.</span>
-          <span>ptrs itself was never finished, and it stopped being maintained long ago, so it is unusable.</span>
+          <span><b class="text-slate-300">The old option is dead.</b> ptrs itself was never finished, and it stopped being maintained long ago, so it is unusable.</span>
         </li>
         <li class="flex gap-3 card-hover p-3 rounded-lg animate-fade-in-up opacity-0 delay-500">
           <span class="text-blue-400 font-mono">5.</span>
-          <span>Unified architecture makes writing PTs in Rust KISS.</span>
+          <span><b class="text-slate-300">KISS by design.</b> Unified architecture makes writing PTs in Rust simple.</span>
         </li>
         <li class="flex gap-3 card-hover p-3 rounded-lg animate-fade-in-up opacity-0 delay-600">
           <span class="text-blue-400 font-mono">6.</span>
-          <span>Reviewed by the authors of UAT (a QUIC-based PT) and ptrs-gesher.</span>
+          <span><b class="text-slate-300">Peer-reviewed.</b> Reviewed by the authors of UAT (a QUIC-based PT) and ptrs-gesher.</span>
         </li>
         <li class="flex gap-3 card-hover p-3 rounded-lg animate-fade-in-up opacity-0 delay-700">
           <span class="text-blue-400 font-mono">7.</span>
-          <span>Already publicly requested review on the mailing list. Some community members volunteered to review. Anti-censorship expressed interest, but due to workload, no review date can be guaranteed at this time.</span>
+          <span><b class="text-slate-300">Open to community review.</b> Already publicly requested review on the mailing list. Some community members volunteered to review. Anti-censorship expressed interest, but due to workload, no review date can be guaranteed at this time.</span>
         </li>
-        <li class="flex gap-3 card-hover p-3 rounded-lg animate-fade-in-up opacity-0 delay-800">
+                <li class="flex gap-3 card-hover p-3 rounded-lg animate-fade-in-up opacity-0 delay-800">
           <span class="text-blue-400 font-mono">8.</span>
-          <span>ptrs-gesher makes heavy use of AI. While its authors consider AI-driven development. Therefore, if you care about AI, that is another reason.
+          <span><b class="text-slate-300">No AI in the core.</b> ptrs-gesher makes heavy use of AI, and its authors consider AI-driven development acceptable. Therefore, if you care about AI, that is another reason.
              Besides, ptrs-gesher's framework is not ready yet: it is currently more of a collection of PTs than a framework, and you cannot use ready-made features such as ExtOrPort.
              But it must be acknowledged that the author of ptrs-gesher is a really good, friendly person. I genuinely respect them.
+             <b class="text-slate-300">On a personal note:</b> the relationship stayed at a single code review, simply because the other party is fond of AI. The author has said that because the Tor project officially rejects AI, he absolutely cannot use it — so the two never went further than that one review.
             </span>
         </li>
       </ol>
     </section>
 
+    <!-- Crates -->
     <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-4 max-w-5xl w-full text-left mb-16">
       <div class="p-5 border border-slate-800 rounded-lg card-hover animate-fade-in-up opacity-0 delay-500">
         <div class="text-blue-400 font-mono text-xs mb-2">pt_err</div>
@@ -183,6 +206,29 @@
         <div class="text-sm text-slate-400">ExtORPort + Other common implementation</div>
       </div>
     </div>
+
+    <!-- Get Started -->
+    <section class="max-w-3xl w-full text-left mb-16 animate-fade-in-up opacity-0 delay-700">
+      <h2 class="text-2xl font-bold mb-6 text-center text-slate-300">
+        Get Started
+      </h2>
+
+      <p class="text-sm text-slate-500 mb-3">Add the crates to your <span class="font-mono text-slate-400">Cargo.toml</span>:</p>
+      <pre class="mb-6"><code><span class="tok-cmt"># Available on crates.io</span>
+      <span class="tok-key">pt_err</span>     = <span class="tok-str">"*"</span>
+      <span class="tok-key">pt_tracing</span> = <span class="tok-str">"*"</span>
+      <span class="tok-key">pt_config</span>  = <span class="tok-str">"*"</span>
+      <span class="tok-key">pt_core</span>    = <span class="tok-str">"*"</span></code></pre>
+      <p class="text-sm text-slate-500 mb-3 mt-6">Or check out the full guide on GitHub:</p>
+      <a href="https://github.com/pryty26/rust-pt"
+         class="github-btn inline-flex items-center gap-3 px-6 py-3 bg-[#eb2727] hover:bg-[#ff4444] text-white font-semibold rounded-lg transition border-2 border-red-500 hover:border-red-300">
+        <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+          <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.065 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405 1.02 0 2.04.135 3 .405 2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.285 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/>
+        </svg>
+        Read the README on GitHub →
+      </a>
+    </section>
+    </section>
 
   </main>
 
