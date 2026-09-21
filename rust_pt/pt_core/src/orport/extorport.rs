@@ -15,13 +15,13 @@ use pt_config::{
     derive_deftly_template_Builder, derive_deftly_template_FromDiscriminant,
     derive_deftly_template_FromString, derive_deftly_template_IntoU8,
 };
-use subtle::ConstantTimeEq;
-use pt_err::ExtOrPortError::{self};
+use pt_err::ExtOrPortError;
 use pt_tracing::prelude::*;
 use sha2::Sha256;
 use std::array::TryFromSliceError;
 use std::net::SocketAddr;
 use std::path::PathBuf;
+use subtle::ConstantTimeEq;
 use tokio::fs;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::TcpStream;
@@ -115,7 +115,7 @@ pub enum SafeCookieState {
 pub struct ExtOrPort {
     /// Addr of `ExtOrPort`
     #[deftly(default = "\"127.0.0.1:8080\".parse::<SocketAddr>().expect(\"Invalid SocketAddr\")")]
-    addr: SocketAddr,
+    pub addr: SocketAddr,
     /// We define one authentication type: `SAFE_COOKIE`.
     /// Its `AuthType` value is 1.
     /// It is based on the client proving to the bridge that it can access a given “cookie” file on disk.
@@ -131,16 +131,16 @@ pub struct ExtOrPort {
     /// ```
     /// where <path> is a filesystem path.
     #[deftly(default = "\"./rust\"")]
-    auth_cookie_file: PathBuf,
+    pub auth_cookie_file: PathBuf,
     /// Different state for Pt `ExtOrPort`
     #[deftly(default = "ExtOrPortState::AuthTypesNegotiation")]
-    state: ExtOrPortState,
+    pub(crate) state: ExtOrPortState,
     /// The reader of client's connection to the server
     #[deftly(default = "None")]
-    reader: Option<OwnedReadHalf>,
+    pub reader: Option<OwnedReadHalf>,
     /// The writer of client's connection to the server
     #[deftly(default = "None")]
-    writer: Option<OwnedWriteHalf>,
+    pub writer: Option<OwnedWriteHalf>,
 }
 
 /// Diffrent auth types
@@ -262,6 +262,16 @@ pub struct ExtOrPortRecvSettings {
 }
 #[async_trait]
 impl ClientRecvExtOrPortProtocol for ExtOrPort {
+    /// # Errors
+    /// - [`ExtOrPortError::StreamMissing`] if the reader half is not set,
+    ///   i.e. `connect()` has not completed successfully.
+    /// - Any error returned by `PtTracing::info`, typically when
+    ///   `PT_TRACING` is unset.
+    /// - [`ExtOrPortError::Other`] if reading from the server fails,
+    ///   including `UnexpectedEof` when the server closes the connection
+    ///   mid-frame.
+    /// - [`ExtOrPortError::Other`] if the command or length bytes cannot be
+    ///   converted to `u16` / `ExtOrPortReply`.
     async fn recv_listen(&mut self) -> Result<ExtOrPortReply, ExtOrPortError> {
         // For receiving Server reply, we have to have an already established connection
         let Some(mut reader) = self.reader.take() else {
@@ -322,7 +332,7 @@ impl ClientRecvExtOrPortProtocol for ExtOrPort {
                         },
                         ExtOrPortReply::NotReceived => {
                             unreachable!("We should have already read the Reply")
-                        }
+                        },
                     }
                     recv_settings.state = ExtOrPortRecvState::StateEnd;
                 },
@@ -482,11 +492,11 @@ impl ExtOrPort {
                         ExtOrPortError::InvalidServerMsg("Invalid ServerHash".to_string())
                     })?;
                     if server_hash.ct_eq(&expected_serv_hash).into() {
-                            server_nonce_buf = server_nonce;
-                            auth_state = SafeCookieState::SendClientHash;
-                        } else {
-                            return Err(ExtOrPortError::InvalidServerHash);
-                        }
+                        server_nonce_buf = server_nonce;
+                        auth_state = SafeCookieState::SendClientHash;
+                    } else {
+                        return Err(ExtOrPortError::InvalidServerHash);
+                    }
                 },
                 SafeCookieState::SendClientHash => {
                     // ClientHash                                  [32 octets]

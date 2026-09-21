@@ -24,5 +24,6 @@ anyhow = { workspace = true }
 hmac = { workspace = true }
 sha2 = { workspace = true }
 getrandom = { workspace = true }
-async-trait = "0.1.92"
-tokio-util = "0.7.19"
+async-trait = { workspace = true }
+tokio-util = { workspace = true }
+subtle = { workspace = true }
