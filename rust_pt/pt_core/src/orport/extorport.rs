@@ -15,6 +15,7 @@ use pt_config::{
     derive_deftly_template_Builder, derive_deftly_template_FromDiscriminant,
     derive_deftly_template_FromString, derive_deftly_template_IntoU8,
 };
+use subtle::ConstantTimeEq;
 use pt_err::ExtOrPortError::{self};
 use pt_tracing::prelude::*;
 use sha2::Sha256;
@@ -480,15 +481,12 @@ impl ExtOrPort {
                     let server_hash: [u8; 32] = buf[0..32].try_into().map_err(|_| {
                         ExtOrPortError::InvalidServerMsg("Invalid ServerHash".to_string())
                     })?;
-                    match server_hash {
-                        _ if server_hash == expected_serv_hash => {
+                    if server_hash.ct_eq(&expected_serv_hash).into() {
                             server_nonce_buf = server_nonce;
                             auth_state = SafeCookieState::SendClientHash;
-                        },
-                        _ => {
+                        } else {
                             return Err(ExtOrPortError::InvalidServerHash);
-                        },
-                    }
+                        }
                 },
                 SafeCookieState::SendClientHash => {
                     // ClientHash                                  [32 octets]
