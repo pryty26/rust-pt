@@ -6,7 +6,7 @@
 use super::extorport::ExtOrPortReply;
 use async_trait::async_trait;
 use pt_err::ExtOrPortError;
-use tokio::net::TcpStream;
+use tokio::net::tcp::OwnedWriteHalf;
 /// ```text
 /// Protocol
 ///
@@ -45,13 +45,16 @@ pub trait ClientExtOrPortProtocol {
     /// [0x0000] DONE: There is no more information to give. The next
     /// bytes sent by the transport will be those tunneled over it.
     /// (body ignored)
-    async fn done(stream: &mut TcpStream) -> Result<(), ExtOrPortError>;
+    async fn done(writer: &mut OwnedWriteHalf) -> Result<(), ExtOrPortError>;
     ///      [0x0001] USERADDR: an address:port string that represents the
     ///        client's address.
-    async fn user_addr(stream: &mut TcpStream, client_addr: String) -> Result<(), ExtOrPortError>;
+    async fn user_addr(
+        writer: &mut OwnedWriteHalf,
+        client_addr: String,
+    ) -> Result<(), ExtOrPortError>;
     ///      [0x0002] TRANSPORT: a string of the name of the pluggable
     ///        transport currently in effect on the connection.
-    async fn transport(stream: &mut TcpStream, pt_name: String) -> Result<(), ExtOrPortError>;
+    async fn transport(writer: &mut OwnedWriteHalf, pt_name: String) -> Result<(), ExtOrPortError>;
 }
 
 /// ```text

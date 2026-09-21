@@ -91,16 +91,16 @@ pub mod prelude {
 pub struct Pt {
     /// The log severity
     #[deftly(default = "SEVERITY::NOTICE")]
-    severity: SEVERITY,
+    pub severity: SEVERITY,
     /// The Config key, user must not call `with_config_key(...)` to change that
     /// User must call `try_init()` to get the Config Key
     #[deftly(default = "None")]
-    config_key: Option<ConfigKey>,
+    pub config_key: Option<ConfigKey>,
     /// Optional `ExtOrPort` connection
     /// user must not call `with_extorport` to set that
     /// please call `Pt.try_extorport()`
     #[deftly(default = "None")]
-    extorport: Option<ExtOrPort>,
+    pub extorport: Option<ExtOrPort>,
 }
 
 impl Pt {
