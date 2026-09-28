@@ -64,9 +64,16 @@ impl ConfigKey {
     }
     /// initialize Config from env
     /// We panic fastly here
+    /// # Note:
+    /// - For client config, this function will automatically send `Proxy Done`
+    /// - Remember that caller should call the `VERSION`
+    ///
+    /// Currently `pt_core` would handle that, so if you are using the `try_init()` from `pt_core`,
+    /// you do not need to worry about that
+    ///
     /// # Panics
     /// - if the Environment have not set correctly (E.g, both Server and Client settings are set, etc.)
-    /// # Safety
+    /// # Preconditions
     /// - User must not interact with environment before calling `init()`
     /// - `LazyLock` ensure that it would only init one time
     /// - There is not a thread interacting with environment

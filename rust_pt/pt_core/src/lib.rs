@@ -69,8 +69,8 @@ pub mod init;
 
 /// To use all the traits
 pub mod prelude {
-    pub use crate::orport::traits::*;
     pub use crate::Pt;
+    pub use crate::orport::traits::*;
 }
 
 /// The core config for PT

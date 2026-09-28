@@ -3,8 +3,8 @@
 // Filename: init.rs
 //======================================================================
 
-use crate::{OrPortKind, Pt};
 use crate::orport::extorport::ExtOrPort;
+use crate::{OrPortKind, Pt};
 use anyhow::Result;
 use pt_config::prelude::*;
 use pt_err::PtError;
@@ -13,7 +13,11 @@ use tokio::net::TcpStream;
 
 impl Pt {
     /// Init the Pt
-    /// Including configs, and Logs
+    /// Including configs, and Logs'
+    /// 
+    /// # Note
+    /// - We will automatically send `Proxy Done` and `Version`
+    /// 
     /// # Errors
     /// Could panic, if `PtTracing` inition fails
     ///

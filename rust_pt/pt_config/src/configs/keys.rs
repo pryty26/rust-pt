@@ -161,7 +161,11 @@ impl TryFrom<RawClientKey> for ClientKey {
     type Error = ClientKeyConfigError;
     fn try_from(value: RawClientKey) -> Result<Self, Self::Error> {
         if let Some(url) = value.TOR_PT_PROXY {
-            validate_proxy_url(&url)?;
+            if let Err(e) = validate_proxy_url(&url) {
+                PtTracing::proxy_error(&e.to_string());
+                return Err(e);
+            }
+            PtTracing::proxy_done();
             return Ok(ClientKey {
                 TOR_PT_CLIENT_TRANSPORTS: value.TOR_PT_CLIENT_TRANSPORTS,
                 TOR_PT_PROXY: Some(url),
