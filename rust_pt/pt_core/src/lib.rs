@@ -70,6 +70,7 @@ pub mod init;
 /// To use all the traits
 pub mod prelude {
     pub use crate::orport::traits::*;
+    pub use crate::Pt;
 }
 
 /// The core config for PT
@@ -84,7 +85,7 @@ pub mod prelude {
 ///     // but since we are not setting the env config in docs test,
 ///     // so just leave it for now
 ///     // pt.try_init();
-///     // pt.try_extorport();
+///     // pt.connect_or();
 /// }
 ///
 /// ```
@@ -159,4 +160,14 @@ impl Pt {
             },
         }
     }
+}
+
+/// Which control connection was successfully established.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
+pub enum OrPortKind {
+    /// Extended `ORPort` (the preferred path).
+    ExtOrPort,
+    /// Plain `ORPort` (fallback when `ExtOrPort` is unavailable).
+    OrPort,
 }

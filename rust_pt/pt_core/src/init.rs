@@ -3,7 +3,7 @@
 // Filename: init.rs
 //======================================================================
 
-use crate::Pt;
+use crate::{OrPortKind, Pt};
 use crate::orport::extorport::ExtOrPort;
 use anyhow::Result;
 use pt_config::prelude::*;
@@ -61,17 +61,17 @@ impl Pt {
     /// # Errors
     /// if Pt is not initialized, or `connect` fails
     /// (See [`ExtOrPort::connect`])
-    pub async fn connect_or(&mut self) -> Result<(), PtError> {
+    pub async fn connect_or(&mut self) -> Result<OrPortKind, PtError> {
         if self.is_client()? {
             return Err(PtError::ClientOrPortUnavailable);
         }
         match self.try_extorport().await {
-            Ok(()) => Ok(()),
+            Ok(()) => Ok(OrPortKind::ExtOrPort),
             Err(PtError::ExtOrPortNotAvailable(_)) => {
                 // Try to connect to the OrPort
                 if let Some(addr) = self.get_server_config()?.TOR_PT_ORPORT {
                     self.orport = Some(TcpStream::connect(addr).await?);
-                    return Ok(());
+                    return Ok(OrPortKind::OrPort);
                 }
                 PtTracing::error("Config poisoned, OrPort and ExtOrPort both unavailable")?;
                 Err(PtError::PtConfigPoisoned(
