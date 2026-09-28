@@ -37,6 +37,8 @@ dotenvy         = "0.15.7"
 
 # Async runtime
 tokio           = { version = "1.53.1", features = ["full"] }
+async-trait     = "0.1.92"
+tokio-util      = "0.7.19"
 
 # Tracing & logging
 tracing         = "0.1.44"
@@ -55,3 +57,4 @@ url             = { version = "2.5.8", features = ["serde"] }
 hmac            = "0.13.0"
 sha2            = "0.11.0"
 getrandom       = "0.4.3"
+subtle          = "2.6.1"
