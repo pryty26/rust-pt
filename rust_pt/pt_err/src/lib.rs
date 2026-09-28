@@ -121,15 +121,30 @@ pub enum ExtOrPortError {
 #[derive_deftly(OtherFromError)]
 #[non_exhaustive]
 pub enum PtError {
+    /// The config is poisoned,
+    /// this error is crusial
+    /// User must not ignore it
+    #[error("Config poisoned: {0}")]
+    PtConfigPoisoned(String),
+    /// Client side's Tor servers, do not support `OrPort` or `ExtOrPort`,
+    /// you can only connect to them when you are in the server side
+    #[error("ORPort and ExtORPort are only provided by a server-side Tor")]
+    ClientOrPortUnavailable,
     /// Pt is never inited
     #[error("PtNotInitialized {0}")]
     PtNotInitialized(String),
     /// `ExtOrPort` is not set
     #[error("ExtOrPort unfound {0}")]
-    ExtOrPortUnfound(String),
+    ExtOrPortNotAvailable(String),
     #[error("ExtOrPortError: {0}")]
     /// Error for `ExtOrPortError`
     ExtOrPort(#[from] ExtOrPortError),
+    /// Expect in the server, but actually in the client side
+    #[error("Not in server: {0}")]
+    NotInServer(String),
+    /// Expect in the client, but actually in the server side
+    #[error("Not in client: {0}")]
+    NotInClient(String),
     /// Other errors
     #[error("{0}")]
     Other(String),

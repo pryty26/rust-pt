@@ -56,10 +56,12 @@ pub mod orport;
 /// Variables
 pub mod variables;
 use derive_deftly::Deftly;
+use pt_config::configs::keys::{ClientKey, ServerKey};
 use pt_config::derive_deftly_template_Builder;
 use pt_config::prelude::*;
 use pt_err::PtError;
 use pt_tracing::prelude::*;
+use tokio::net::TcpStream;
 
 use crate::orport::extorport::ExtOrPort;
 /// Init the Pt
@@ -82,6 +84,7 @@ pub mod prelude {
 ///     // but since we are not setting the env config in docs test,
 ///     // so just leave it for now
 ///     // pt.try_init();
+///     // pt.try_extorport();
 /// }
 ///
 /// ```
@@ -101,6 +104,11 @@ pub struct Pt {
     /// please call `Pt.try_extorport()`
     #[deftly(default = "None")]
     pub extorport: Option<ExtOrPort>,
+    /// Optional `OrPort` connection,
+    /// there should not have a `OrPort` connection,
+    /// if there is already a `ExtOrPort` connection
+    #[deftly(default = "None")]
+    pub orport: Option<TcpStream>,
 }
 
 impl Pt {
@@ -123,5 +131,32 @@ impl Pt {
     /// if Pt is not initialized
     pub fn is_client(&self) -> Result<bool, PtError> {
         Ok(self.get()?.is_client())
+    }
+    /// Get the config, and ensure that it is `ServerConfig`.
+    /// Only return the `server_config` part
+    /// # Errors
+    /// if Pt is not initialized, or config is not for `server`
+    pub fn get_server_config(&self) -> Result<&ServerKey, PtError> {
+        match self.get()? {
+            ConfigKey::Server { server_key, .. } => Ok(server_key),
+            ConfigKey::Client { .. } => {
+                Err(PtError::NotInServer("get_server_config error".to_string()))
+            },
+        }
+    }
+    /// Get the config, and ensure that it is `ClientConfig`.
+    /// Only return the `client_key` part.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if `Pt` is not initialized, or if the config is not
+    /// for a client.
+    pub fn get_client_config(&self) -> Result<&ClientKey, PtError> {
+        match self.get()? {
+            ConfigKey::Client { client_key, .. } => Ok(client_key),
+            ConfigKey::Server { .. } => {
+                Err(PtError::NotInClient("get_client_config error".to_string()))
+            },
+        }
     }
 }

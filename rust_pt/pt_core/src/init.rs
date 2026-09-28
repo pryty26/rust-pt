@@ -9,12 +9,13 @@ use anyhow::Result;
 use pt_config::prelude::*;
 use pt_err::PtError;
 use pt_tracing::prelude::*;
+use tokio::net::TcpStream;
 
 impl Pt {
     /// Init the Pt
     /// Including configs, and Logs
     /// # Errors
-    ///
+    /// Could panic, if `PtTracing` inition fails
     ///
     /// # Panics
     /// -  if environment are not set or contains incorrect settings
@@ -37,24 +38,47 @@ impl Pt {
     /// # Errors
     /// if Pt is not initialized
     pub async fn try_extorport(&mut self) -> Result<(), PtError> {
-        let config_key = self.get()?;
-        match config_key {
-            ConfigKey::Server { server_key, .. } => {
-                if let Some(ext_addr) = server_key.TOR_PT_EXTENDED_SERVER_PORT
-                    && let Some(ext_cookie_file) = server_key.TOR_PT_AUTH_COOKIE_FILE.clone()
-                {
-                    // Handling `ExtOrPort`
-                    self.extorport = {
-                        let mut ext_orport: ExtOrPort = ExtOrPort::builder()
-                            .with_addr(ext_addr)
-                            .with_auth_cookie_file(ext_cookie_file);
-                        ext_orport.connect().await?;
-                        Some(ext_orport)
-                    };
-                }
-            },
-            ConfigKey::Client { .. } => {},
+        let server_key = self.get_server_config()?;
+        if let Some(ext_addr) = server_key.TOR_PT_EXTENDED_SERVER_PORT
+            && let Some(ext_cookie_file) = server_key.TOR_PT_AUTH_COOKIE_FILE.clone()
+        {
+            // Handling `ExtOrPort`
+            self.extorport = {
+                let mut ext_orport: ExtOrPort = ExtOrPort::builder()
+                    .with_addr(ext_addr)
+                    .with_auth_cookie_file(ext_cookie_file);
+                ext_orport.connect().await?;
+                Some(ext_orport)
+            };
+        } else {
+            return Err(PtError::ExtOrPortNotAvailable(
+                "invalid or empty Config".to_string(),
+            ));
         }
         Ok(())
+    }
+    ///
+    /// # Errors
+    /// if Pt is not initialized, or `connect` fails
+    /// (See [`ExtOrPort::connect`])
+    pub async fn connect_or(&mut self) -> Result<(), PtError> {
+        if self.is_client()? {
+            return Err(PtError::ClientOrPortUnavailable);
+        }
+        match self.try_extorport().await {
+            Ok(()) => Ok(()),
+            Err(PtError::ExtOrPortNotAvailable(_)) => {
+                // Try to connect to the OrPort
+                if let Some(addr) = self.get_server_config()?.TOR_PT_ORPORT {
+                    self.orport = Some(TcpStream::connect(addr).await?);
+                    return Ok(());
+                }
+                PtTracing::error("Config poisoned, OrPort and ExtOrPort both unavailable")?;
+                Err(PtError::PtConfigPoisoned(
+                    "OrPort and ExtOrPort both unavailable".to_string(),
+                ))
+            },
+            Err(e) => Err(e),
+        }
     }
 }
