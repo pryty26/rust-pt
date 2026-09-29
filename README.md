@@ -137,7 +137,7 @@ yes, there is a PTs written in rust, I did linked it in an email I replied to yo
 on the code hosting, let's start with you selfhosting it, once you have something working we'll review it and discuss where to host it
 
 ## FIle tree
-# This may be outdate (last update: 2026.9.8)
+# This may be outdate (last update / checked: 2026.9.29)
 
 
 
