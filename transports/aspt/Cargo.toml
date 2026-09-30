@@ -1,0 +1,16 @@
+[package]
+name = "aspt"
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+readme      = "README.md"
+description = "A sucks PT"
+publish = false
+version = "0.0.0"
+[dependencies]
+tokio = { workspace = true }
+pt_core = { path = "../../rust_pt/pt_core" }
+pt_tracing = { path = "../../rust_pt/pt_tracing"}
+pt_config = { path = "../../rust_pt/pt_config"}
+pt_err = { path = "../../rust_pt/pt_err"}
+anyhow = { workspace = true }

@@ -57,9 +57,9 @@ use thiserror::Error;
 /// Diffrent macros for Error
 mod macros;
 /// Errors which is related with `ExtOrPort`
-#[derive(Debug, Error, PartialEq, Deftly, Clone)]
-#[derive_deftly(OtherFromError)]
+#[derive(Debug, Error)]
 #[non_exhaustive]
+#[allow(unused)] // We will need these in future
 pub enum ExtOrPortError {
     /// The stream is `None`. Therefore, we cannot receive the server's reply
     #[error("The stream is `None`. Therefore, we cannot receive the server's reply")]
@@ -110,14 +110,17 @@ pub enum ExtOrPortError {
     /// PT name is longer than 65535 bytes
     #[error("PT name is longer than 65535 bytes: {0}")]
     PtNameTooLong(String),
+    /// Io Error
+    #[error(transparent)]
+    Io(#[from] std::io::Error),
     /// Other errors
     /// Can be converted from `anyhow::Error`
-    #[error("Error: {0}")]
-    Other(String),
+    #[error(transparent)]
+    Other(#[from] anyhow::Error),
 }
 
 /// Errors for `pt_core::Pt`
-#[derive(Debug, Error, PartialEq, Deftly, Clone)]
+#[derive(Debug, Error, Deftly)]
 #[derive_deftly(OtherFromError)]
 #[non_exhaustive]
 pub enum PtError {
