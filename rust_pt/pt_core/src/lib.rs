@@ -113,7 +113,7 @@ pub struct Pt {
 }
 
 impl Pt {
-    /// get self
+    /// get the config
     /// # Errors
     /// if Pt is not initialized
     pub(crate) fn get(&self) -> Result<&ConfigKey, PtError> {

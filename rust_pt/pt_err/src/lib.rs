@@ -72,8 +72,8 @@ pub enum ExtOrPortError {
     InvalidStaticHeader,
     /// Unsupported auth types
     /// We have not found the supported auth types
-    #[error("Unsupported auth types")]
-    UnsupportedAuthTypes,
+    #[error("Unsupported auth types: {0}")]
+    UnsupportedAuthTypes(String),
     /// The server closed the connection during the `ExtOrPort` handshake.
     ///
     /// This is usually detected when the underlying tokio read returns 0 (EOF),

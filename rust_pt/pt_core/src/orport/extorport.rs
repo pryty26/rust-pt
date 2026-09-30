@@ -581,7 +581,9 @@ impl ExtOrPort {
             return Err(ExtOrPortError::EndAuthTypeUnfoundWithCandidates(buf));
         }
         if sup_buf.is_empty() {
-            return Err(ExtOrPortError::UnsupportedAuthTypes);
+            return Err(ExtOrPortError::UnsupportedAuthTypes(
+                "empty authtypes buffer".to_string(),
+            ));
         }
         // Let's just return the first supported auth type
         auth_collection.extend_from_slice(&buf);
@@ -650,7 +652,7 @@ impl ExtOrPort {
                                     self.state = ExtOrPortState::SafeCookieAuthentication;
                                 },
                                 _ => {
-                                    return Err(ExtOrPortError::UnsupportedAuthTypes);
+                                    return Err(ExtOrPortError::UnsupportedAuthTypes("unsupported authtypes, please contact developers if you need this authtype support".to_string()));
                                 },
                             }
                             writer.write_all(&[auth_type as u8]).await?;
@@ -667,9 +669,9 @@ impl ExtOrPort {
                             // therefore we should store auth_cand and reread again
                             auth_collection.extend(auth_cand);
                         },
-                        Err(ExtOrPortError::UnsupportedAuthTypes) => {
+                        Err(ExtOrPortError::UnsupportedAuthTypes(msg)) => {
                             writer.write_all(&[0]).await?;
-                            return Err(ExtOrPortError::UnsupportedAuthTypes);
+                            return Err(ExtOrPortError::UnsupportedAuthTypes(msg));
                         },
                         Err(e) => return Err(e),
                     }

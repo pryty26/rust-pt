@@ -13,11 +13,12 @@ use tokio::net::TcpStream;
 
 impl Pt {
     /// Init the Pt
-    /// Including configs, and Logs'
-    /// 
+    /// Including configs, and Logs
+    /// Do not init the logs, if you would call that
+    ///
     /// # Note
     /// - We will automatically send `Proxy Done` and `Version`
-    /// 
+    ///
     /// # Errors
     /// Could panic, if `PtTracing` inition fails
     ///
