@@ -22,7 +22,9 @@ Note(pryty26):
 (*/ω＼*)
 If you are user,
 you may not be suitable to this project, because this project is intended for developers building PT implementations.
-But you may like to download the Tor Browser [https://www.torproject.org/download/]?
+But you may like to download the Tor Browser 
+
+[https://www.torproject.org/download/]?
 
 ## If you would like to contribute (Thanks!ヾ(*≧▽≦*)o)
 # To get started, clone the project and dive in!
@@ -40,12 +42,12 @@ After that, you would like to have a look into the CONTRIBUTE.md
 there have more detailed informations.
 
 ## If you would like to use this library
-You can have a look into the .\rust-pt\transports,
+You can have a look into the ./transports,
 since there should have all the transports which is developed with this framework.
 
 Also, docs in docs.rs could be usefull too.
 
-TODO: Add example/*
+An great example would be ./transports/aspt
 
 ## Contributors
 (If this is your first time developing here, you can add your name below. :)
@@ -65,7 +67,14 @@ Oo(〃＾▽＾〃)oO
 
 # *╰(°▽°)╯*
 So far, it's not a very polished project and this is not meant to make any money. But watch this space! Just for fun, for freedom, for an open-source and privacy internet!
-F*ck censorship and human rights violations!
+
+F*ck censorship!
+F*ck anti-human rights!
+F*ck dictators!
+F*ck anti-democratic!
+F*ck invasion of privacy!
+
+Give us liberty, or give us death!
 Let's no more counting dollars we would be counting stars.
 Seek that fun and ye shall find!
 

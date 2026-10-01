@@ -60,7 +60,7 @@ pub fn separate_with(s: &str, comma: &str) -> Vec<String> {
 
 /// Common settings required by both client-side and server-side
 /// Pluggable Transport proxies.
-#[derive(Debug, Serialize, Deserialize, Deftly)]
+#[derive(Debug, Serialize, Deserialize, Deftly, Clone)]
 #[derive_deftly(DefineVariantError)]
 #[serde(try_from = "RawCommonKey")]
 #[allow(clippy::exhaustive_structs)]
@@ -146,7 +146,7 @@ impl TryFrom<RawCommonKey> for CommonKey {
 }
 
 /// Used to validate that the config is valid
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone)]
 pub(crate) struct RawClientKey {
     #[serde(rename = "tor_pt_client_transports")]
     /// For field documentation, see the corresponding fields in [`ClintKey`].
@@ -178,7 +178,7 @@ impl TryFrom<RawClientKey> for ClientKey {
     }
 }
 /// Settings which is needed at client side
-#[derive(Debug, Serialize, Deserialize, Deftly)]
+#[derive(Debug, Serialize, Deserialize, Deftly, Clone)]
 #[derive_deftly(DefineVariantError)]
 #[serde(try_from = "RawClientKey")]
 #[allow(clippy::exhaustive_structs)]
@@ -370,7 +370,7 @@ pub fn resolve_addr(a: &str) -> Result<SocketAddr, ClientKeyConfigError> {
 /// with options that are to be passed to the transport.
 /// Example:
 /// `TOR_PT_SERVER_TRANSPORT_OPTIONS=scramblesuit:key=banana;automata:rule=110;automata:depth=3`
-#[derive(Debug, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Clone)]
 #[non_exhaustive]
 pub struct TransportOption {
     /// Corresponding `PtTransportName` of Settings
@@ -423,7 +423,7 @@ pub(crate) struct RawServerKey {
 
 /// Many `TransportOption`
 /// This is exhaustive, because we will not change it
-#[derive(Debug, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Clone)]
 #[allow(clippy::exhaustive_structs)]
 pub struct TransportOptions {
     /// Many `TransportOption`
@@ -654,7 +654,7 @@ impl TryFrom<RawServerKey> for ServerKey {
     }
 }
 /// Settings which is needed at server side
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(try_from = "RawServerKey")]
 #[allow(clippy::exhaustive_structs)]
 pub struct ServerKey {

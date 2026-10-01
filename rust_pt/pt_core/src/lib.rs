@@ -56,7 +56,7 @@ pub mod orport;
 /// Variables
 pub mod variables;
 use derive_deftly::Deftly;
-use pt_config::configs::keys::{ClientKey, ServerKey};
+use pt_config::configs::keys::{ClientKey, CommonKey, ServerKey};
 use pt_config::derive_deftly_template_Builder;
 use pt_config::prelude::*;
 use pt_err::PtError;
@@ -116,7 +116,7 @@ impl Pt {
     /// get the config
     /// # Errors
     /// if Pt is not initialized
-    pub(crate) fn get(&self) -> Result<&ConfigKey, PtError> {
+    pub fn get(&self) -> Result<&ConfigKey, PtError> {
         self.config_key
             .as_ref()
             .ok_or_else(|| PtError::PtNotInitialized("Please call Pt.try_init()".to_string()))
@@ -150,8 +150,9 @@ impl Pt {
     ///
     /// # Errors
     ///
-    /// Returns an error if `Pt` is not initialized, or if the config is not
-    /// for a client.
+    /// Returns an error
+    /// - `Pt` is not initialized
+    /// - the config is not for a client.
     pub fn get_client_config(&self) -> Result<&ClientKey, PtError> {
         match self.get()? {
             ConfigKey::Client { client_key, .. } => Ok(client_key),
@@ -160,11 +161,27 @@ impl Pt {
             },
         }
     }
+    /// Get the common config of the config
+    /// # Errors
+    ///
+    /// Returns an error
+    /// - `Pt` is not initialized
+    pub fn get_common_config(&self) -> Result<&CommonKey, PtError> {
+        Ok(self.get()?.common_key())
+    }
+    /// Check if the connection is `ExtOrPort`
+    pub fn is_extorport(&self) -> bool {
+        self.extorport.is_some()
+    }
+    /// Check if the connection is `OrPort`
+    pub fn is_orport(&self) -> bool {
+        self.orport.is_some()
+    }
 }
 
 /// Which control connection was successfully established.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-#[non_exhaustive]
+#[allow(clippy::exhaustive_enums)] // Unless pt-spec changes, this will not change
 pub enum OrPortKind {
     /// Extended `ORPort` (the preferred path).
     ExtOrPort,

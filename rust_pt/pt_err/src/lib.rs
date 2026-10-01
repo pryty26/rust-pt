@@ -142,6 +142,12 @@ pub enum PtError {
     #[error("ExtOrPortError: {0}")]
     /// Error for `ExtOrPortError`
     ExtOrPort(#[from] ExtOrPortError),
+    /// User called some feature that needs `ExtOrPort` connection be ready
+    #[error("Connection is not ExtOrPort or not inited: {0}")]
+    NotExtOrPort(String),
+    /// User called some feature that needs `OrPort` connection be ready
+    #[error("Connection is not OrPort or not inited: {0}")]
+    NotOrPort(String),
     /// Expect in the server, but actually in the client side
     #[error("Not in server: {0}")]
     NotInServer(String),
