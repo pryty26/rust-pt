@@ -11,7 +11,6 @@ use serde::{Deserialize, Serialize};
 /// But we are not going to serialize it
 /// The unsafe is mostly mention that user must call `init()` function first
 /// therefore the enum itself do not have any unsafe things
-#[allow(clippy::unsafe_derive_deserialize)]
 #[derive(Serialize, Deserialize)]
 #[serde(untagged)]
 #[allow(clippy::exhaustive_enums)] // We would not change that, unless pt-spec changes
