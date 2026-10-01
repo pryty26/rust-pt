@@ -51,15 +51,85 @@
 #![deny(clippy::pedantic)] // This is not in Arti
 //! <!-- @@ end lint list
 
-use pt_core::prelude::*;
-use pt_tracing::SEVERITY;
-
+#![allow(clippy::pedantic)]
+#![allow(clippy::print_stdout)]
+#![allow(unused_variables)]
+#![allow(clippy::missing_docs_in_private_items)]
+use std::net::SocketAddr;
+use tokio::net::TcpListener;
+// this is an example, so code quality doesn't matter
+use pt_config::configs::{
+    core::ConfigKey,
+    keys::{ClientKey, CommonKey, ServerKey},
+};
+use pt_core::{OrPortKind, prelude::*};
+use pt_err::PtError;
+// Note: Do not use `pt_tracing::PtTracing`
+// use prelude instead
+use pt_tracing::{SEVERITY, prelude::*};
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     let mut pt: Pt = Pt::builder().with_severity(SEVERITY::INFO);
     pt.try_init()?;
     if pt.is_server()? {
-        pt.connect_or().await?;
+        let server_config: &ServerKey = pt.get_server_config()?;
+        let server_transports = server_config.TOR_PT_SERVER_TRANSPORTS.clone();
+        for transport in server_transports.iter() {
+            if transport != "super_cool_launch" {
+                PtTracing::smethod_error(transport, "Unsupported transport");
+            }
+            let addr = "127.0.0.1:2837".parse::<SocketAddr>()?;
+            super_cool_launch(addr).await?;
+            // ( PTs should launch their PT here, and check whether they supports that transport)
+            PtTracing::smethod(transport, &addr.to_string(), None);
+            match pt.connect_or().await? {
+                OrPortKind::ExtOrPort => {
+                    // Remember send `Okay`
+                    pt.finish(transport.into(), addr.to_string()).await?;
+                },
+                OrPortKind::OrPort => {},
+            }
+        }
+    }
+    // I know I can just use `else`
+    // But this is for showing that `is_client()` is also supported
+    if pt.is_client()? {
+        PtTracing::info("In the client")?;
+        // Note that we will automatically send `Proxy Done` and `Version`
+        // ( I have wrote a lot of docs so you can read them )
+        let client_config: &ClientKey = pt.get_client_config()?;
+        let common_config: &CommonKey = pt.get_common_config()?;
+        // they may return Errors that are defined in the pt_err
+        // # Errors
+        // Returns an error
+        // - `Pt` is not initialized
+        // - the config is not for a client.
+        // These are in the docs comment too.
+        let client_result: Result<&ClientKey, PtError> = pt.get_client_config();
+        match client_result {
+            Ok(_) => {},
+            Err(PtError::NotInClient(string)) => {
+                // Here is the log system,
+                // inherently compatible with pt-spec format
+                PtTracing::error(&format!("Not in the client {string}"))?;
+            },
+            Err(_) => {
+                // Other errors
+            },
+        }
+        // Or, get a whole config
+        let whole_config: &ConfigKey = pt.get()?;
+
+        // The name of these structures' variables follows directly pt-spec
+        let client_transports: &Vec<String> = &client_config.TOR_PT_CLIENT_TRANSPORTS;
+
+        // Or you can `clone()` them
+        let client_config_clone: ClientKey = pt.get_client_config()?.clone();
     }
     Ok(())
+}
+
+async fn super_cool_launch(addr: SocketAddr) -> anyhow::Result<SocketAddr> {
+    TcpListener::bind(addr).await?;
+    Ok(addr)
 }

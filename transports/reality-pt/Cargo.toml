@@ -1,0 +1,13 @@
+[package]
+name = "reality-pt"
+version = "0.1.0"
+edition = "2024"
+publish = false
+
+[dependencies]
+anyhow = {workspace = true}
+derive-deftly = {workspace = true}
+serde = { workspace = true}
+serde_json = { workspace = true }
+toml = { workspace = true }
+zip = {workspace = true}
