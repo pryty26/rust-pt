@@ -10,7 +10,7 @@ use pt_config::prelude::*;
 use pt_err::PtError;
 use pt_tracing::prelude::*;
 use tokio::net::TcpStream;
-
+use pt_config::configs::keys::PtTransportName;
 impl Pt {
     /// Init the Pt
     /// Including configs, and Logs
@@ -97,6 +97,7 @@ impl Pt {
     /// should return `OKAY` or `DENY`.
     /// But in C-tor and goptlib, code shows that server will return `Okay` after sending `done`
     /// Therefore, this function is here
+    /// 
     /// # Errors
     /// - if tokio `write_all(...)` returns Error
     /// - if the stream is missing
@@ -131,7 +132,9 @@ impl Pt {
     ///
     /// Other formats MAY be accepted by current Tor versions, but transports
     /// MUST NOT send them.
-    ///
+    /// 
+    /// # Note
+    /// User have to make sure the `addr` is valid
     /// # Errors
     /// - if tokio `write_all(...)` returns an Error.
     /// - [`PtError::NotExtOrPort`] if no `ExtOrPort` connection has been
@@ -153,7 +156,7 @@ impl Pt {
 
     /// Sends a `TRANSPORT` command to the `ExtOrPort` server, informing it of the
     /// name of the pluggable transport in use.
-    ///
+    /// 
     /// # Errors
     /// - if tokio `write_all(...)` returns an Error.
     /// - [`PtError::NotExtOrPort`] if no `ExtOrPort` connection has been
@@ -161,7 +164,7 @@ impl Pt {
     /// - Any error returned by [`ExtOrPort::transport`], including
     ///   [`ExtOrPortError::PtNameTooLong`] if the transport name exceeds
     ///   `u16::MAX` bytes.
-    pub async fn transport(&mut self, pt_name: String) -> Result<(), PtError> {
+    pub async fn transport(&mut self, pt_name: PtTransportName) -> Result<(), PtError> {
         if let Some(extorport) = &mut self.extorport
             && let Some(writer) = &mut extorport.writer
         {
@@ -190,7 +193,7 @@ impl Pt {
     /// - Any error returned by [`Pt::done_wait`], including
     ///   [`ExtOrPortError::StreamMissing`] if the reader half is not set, or
     ///   [`ExtOrPortError::Other`] on an I/O failure while awaiting `OKAY`.
-    pub async fn finish(&mut self, pt_name: String, client_addr: String) -> Result<(), PtError> {
+    pub async fn finish(&mut self, pt_name: PtTransportName, client_addr: String) -> Result<(), PtError> {
         self.transport(pt_name).await?;
         self.user_addr(client_addr).await?;
         self.done_wait().await?;

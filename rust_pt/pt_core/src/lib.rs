@@ -50,19 +50,18 @@
 #![deny(clippy::unwrap_used)]
 #![deny(clippy::pedantic)] // This is not in Arti
 //! <!-- @@ end lint list
-
+use pt_config::configs::keys::PtTransportName;
 /// Implementation for Extended and Normal `ORPort` for pluggable transports
 pub mod orport;
 /// Variables
 pub mod variables;
 use derive_deftly::Deftly;
 use pt_config::configs::keys::{ClientKey, CommonKey, ServerKey};
-use pt_config::derive_deftly_template_Builder;
+use pt_config::{derive_deftly_template_Builder, derive_deftly_template_FromString};
 use pt_config::prelude::*;
 use pt_err::PtError;
 use pt_tracing::prelude::*;
 use tokio::net::TcpStream;
-
 use crate::orport::extorport::ExtOrPort;
 /// Init the Pt
 pub mod init;
@@ -72,15 +71,17 @@ pub mod prelude {
     pub use crate::Pt;
     pub use crate::orport::traits::*;
 }
-
+use std::collections::HashSet;
 /// The core config for PT
 /// User have to call the builder to build that
+/// 
 /// ```rust
 /// use pt_core::Pt;
 /// use pt_tracing::{prelude::*};
 /// fn main() {
 ///     let pt = Pt::builder()
 ///         .with_severity(SEVERITY::INFO);
+///     // Note that our builder do not have `build` func
 ///     // Then, user can call try_init(),
 ///     // but since we are not setting the env config in docs test,
 ///     // so just leave it for now
@@ -90,7 +91,7 @@ pub mod prelude {
 ///
 /// ```
 #[derive(Deftly)]
-#[derive_deftly(Builder)]
+#[derive_deftly(Builder)] // See [`rust-pt\rust_pt\pt_config\src\macros.rs`]
 #[non_exhaustive]
 pub struct Pt {
     /// The log severity
@@ -110,8 +111,28 @@ pub struct Pt {
     /// if there is already a `ExtOrPort` connection
     #[deftly(default = "None")]
     pub orport: Option<TcpStream>,
+    /// A field used to automatically filter out unsupported transports
+    /// Leaving for empty means skip 
+    #[deftly(default = "None")]
+    pub transports: Option<Vec<PtTransportName>>,
+    /// A field used to automatically filter out unsupported proxy url
+    /// Leaving for empty means skip 
+    #[deftly(default = "None")]
+    pub proxy_schemes: Option<HashSet<ProxySchemes>>,
 }
 
+/// Supported options of scheme
+#[derive(Clone, Deftly, Debug, PartialEq)]
+#[derive_deftly(FromString)]
+#[non_exhaustive]
+pub enum ProxySchemes {
+    /// `Socks5`
+    Socks5,
+    /// `Socks4A`
+    Socks4A,
+    /// `Http`
+    Http,
+}
 impl Pt {
     /// get the config
     /// # Errors

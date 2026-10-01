@@ -23,7 +23,7 @@ use std::str::FromStr;
 use url::Url;
 /// PTs SHOULD ignore PT names that it does not recognize.
 /// So using String is acceptable, since we won't validate it.
-type PtTransportName = String;
+pub type PtTransportName = String;
 use crate::variable::{CURRENT_TRANSPORT_VER, SCHEMES};
 
 /// `RawCommonKey` is used to validate that the config is valid
