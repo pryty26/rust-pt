@@ -15,10 +15,8 @@
 #![allow(clippy::significant_drop_in_scrutinee)] // arti/-/merge_requests/588/#note_2812945
 #![allow(clippy::uninlined_format_args)]
 #![allow(mismatched_lifetime_syntaxes)] // temporary workaround for arti#2060
-#![warn(missing_docs)]
 #![warn(noop_method_call)]
 #![warn(unreachable_pub)]
-#![warn(clippy::all)]
 #![warn(clippy::manual_ok_or)]
 #![warn(clippy::needless_borrow)]
 #![warn(clippy::needless_pass_by_value)]
@@ -27,6 +25,7 @@
 #![warn(clippy::semicolon_if_nothing_returned)]
 #![warn(clippy::trait_duplication_in_bounds)]
 #![warn(clippy::unseparated_literal_suffix)]
+#![deny(clippy::all)]
 #![deny(clippy::await_holding_lock)]
 #![deny(clippy::cargo_common_metadata)]
 #![deny(clippy::cast_lossless)]
@@ -38,6 +37,7 @@
 #![deny(clippy::fallible_impl_from)]
 #![deny(clippy::implicit_clone)]
 #![deny(clippy::large_stack_arrays)]
+#![deny(missing_docs)]
 #![deny(clippy::missing_docs_in_private_items)]
 #![deny(clippy::mod_module_files)]
 #![deny(clippy::print_stderr)]
@@ -51,10 +51,7 @@
 #![deny(clippy::pedantic)] // This is not in Arti
 //! <!-- @@ end lint list
 
-#![allow(clippy::pedantic)]
 #![allow(clippy::print_stdout)]
-#![allow(unused_variables)]
-#![allow(clippy::missing_docs_in_private_items)]
 use std::net::SocketAddr;
 use tokio::net::TcpListener;
 // this is an example, so code quality doesn't matter
@@ -64,28 +61,38 @@ use pt_config::configs::{
 };
 use pt_core::{OrPortKind, prelude::*};
 use pt_err::PtError;
+use std::collections::HashSet;
 // Note: Do not use `pt_tracing::PtTracing`
 // use prelude instead
 use pt_tracing::{SEVERITY, prelude::*};
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-    let mut pt: Pt = Pt::builder().with_severity(SEVERITY::INFO);
+    // When `with_sup_transports(...)` is set before `try_init()`,
+    // `Pt` validates every transport name and reports
+    // `cmethod_error` / `smethod_error` for unsupported ones.
+    // Same goes with `with_proxy_schemes(...)`
+    let mut pt: Pt = Pt::builder()
+        .with_severity(SEVERITY::INFO)
+        .with_sup_transports(Some(vec!["cool_transport".to_string()]))
+        .with_proxy_schemes(Some(HashSet::from([
+            "socks5".to_string(),
+            "http".to_string(),
+        ])));
     pt.try_init()?;
     if pt.is_server()? {
         let server_config: &ServerKey = pt.get_server_config()?;
         let server_transports = server_config.TOR_PT_SERVER_TRANSPORTS.clone();
-        for transport in server_transports.iter() {
-            if transport != "super_cool_launch" {
-                PtTracing::smethod_error(transport, "Unsupported transport");
-            }
+        for _ in &server_transports {
             let addr = "127.0.0.1:2837".parse::<SocketAddr>()?;
             super_cool_launch(addr).await?;
             // ( PTs should launch their PT here, and check whether they supports that transport)
-            PtTracing::smethod(transport, &addr.to_string(), None);
+            PtTracing::smethod("cool_transport", &addr.to_string(), None);
             match pt.connect_or().await? {
                 OrPortKind::ExtOrPort => {
-                    // Remember send `Okay`
-                    pt.finish(transport.into(), addr.to_string()).await?;
+                    // Finish Sends the full `ExtOrPort` handshake for a new client connection:
+                    // `TRANSPORT` → `USERADDR` → `DONE`/`OKAY`.
+                    pt.finish("cool_transport".to_string(), addr.to_string())
+                        .await?;
                 },
                 OrPortKind::OrPort => {},
             }
@@ -98,7 +105,7 @@ async fn main() -> anyhow::Result<()> {
         // Note that we will automatically send `Proxy Done` and `Version`
         // ( I have wrote a lot of docs so you can read them )
         let client_config: &ClientKey = pt.get_client_config()?;
-        let common_config: &CommonKey = pt.get_common_config()?;
+        let _common_config: &CommonKey = pt.get_common_config()?;
         // they may return Errors that are defined in the pt_err
         // # Errors
         // Returns an error
@@ -113,23 +120,24 @@ async fn main() -> anyhow::Result<()> {
                 // inherently compatible with pt-spec format
                 PtTracing::error(&format!("Not in the client {string}"))?;
             },
-            Err(_) => {
+            Err(e) => {
                 // Other errors
+                PtTracing::error(&e.to_string())?;
             },
         }
         // Or, get a whole config
-        let whole_config: &ConfigKey = pt.get()?;
+        let _whole_config: &ConfigKey = pt.get()?;
 
         // The name of these structures' variables follows directly pt-spec
-        let client_transports: &Vec<String> = &client_config.TOR_PT_CLIENT_TRANSPORTS;
+        // transports
+        let _: &Vec<String> = &client_config.TOR_PT_CLIENT_TRANSPORTS;
 
         // Or you can `clone()` them
-        let client_config_clone: ClientKey = pt.get_client_config()?.clone();
+        let _client_config_clone: ClientKey = pt.get_client_config()?.clone();
     }
     Ok(())
 }
-
-async fn super_cool_launch(addr: SocketAddr) -> anyhow::Result<SocketAddr> {
-    TcpListener::bind(addr).await?;
-    Ok(addr)
+/// Super cool transport
+async fn super_cool_launch(addr: SocketAddr) -> anyhow::Result<TcpListener> {
+    Ok(TcpListener::bind(addr).await?)
 }

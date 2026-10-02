@@ -15,10 +15,8 @@
 #![allow(clippy::significant_drop_in_scrutinee)] // arti/-/merge_requests/588/#note_2812945
 #![allow(clippy::uninlined_format_args)]
 #![allow(mismatched_lifetime_syntaxes)] // temporary workaround for arti#2060
-#![warn(missing_docs)]
 #![warn(noop_method_call)]
 #![warn(unreachable_pub)]
-#![warn(clippy::all)]
 #![warn(clippy::manual_ok_or)]
 #![warn(clippy::needless_borrow)]
 #![warn(clippy::needless_pass_by_value)]
@@ -27,6 +25,7 @@
 #![warn(clippy::semicolon_if_nothing_returned)]
 #![warn(clippy::trait_duplication_in_bounds)]
 #![warn(clippy::unseparated_literal_suffix)]
+#![deny(clippy::all)]
 #![deny(clippy::await_holding_lock)]
 #![deny(clippy::cargo_common_metadata)]
 #![deny(clippy::cast_lossless)]
@@ -38,6 +37,7 @@
 #![deny(clippy::fallible_impl_from)]
 #![deny(clippy::implicit_clone)]
 #![deny(clippy::large_stack_arrays)]
+#![deny(missing_docs)]
 #![deny(clippy::missing_docs_in_private_items)]
 #![deny(clippy::mod_module_files)]
 #![deny(clippy::print_stderr)]
@@ -50,8 +50,7 @@
 #![deny(clippy::unwrap_used)]
 #![deny(clippy::pedantic)] // This is not in Arti
 //! <!-- @@ end lint list
-#![allow(clippy::print_stderr)]
-#![allow(clippy::print_stdout)]
+
 //! For detailed information, see [the spec] https://spec.torproject.org/pt-spec/ipc.html
 use anyhow::{Result, anyhow, bail};
 use std::sync::OnceLock;
@@ -145,6 +144,7 @@ impl PtTracing {
     /// panics if `PtTracing` is not inited
     pub fn get_config() -> &'static Self {
         match PT_TRACING.get() {
+            #[allow(clippy::print_stdout)]
             None => {
                 println!("LOG SEVERITY=error MESSAGE=\"pt_tracing is never inited\"");
                 panic!("pt_tracing is never inited")
@@ -190,6 +190,7 @@ impl PtTracing {
             .map_err(|e| anyhow::anyhow!(e))?;
 
         match PT_TRACING.set(self) {
+            #[allow(clippy::print_stdout)]
             Err(_) => {
                 println!("LOG SEVERITY=error MESSAGE=\"pt_tracing already inited\"");
                 bail!("pt_tracing already inited")
@@ -202,6 +203,10 @@ impl PtTracing {
     }
 }
 
+// We turned off level display, so whichever level macro we pick is invisible to the user.
+// And tracing macros perform much better than println!.
+// So we just pick a level that our filter config will never drop: error.
+// Because the strictest level our config allows is ERROR — there's no OFF.
 impl TorPtCommunicator for PtTracing {
     type DebugOutput = Result<()>;
     type InfoOutput = Result<()>;
@@ -228,6 +233,7 @@ impl TorPtCommunicator for PtTracing {
 
     /// Print a notice message, conform with Tor-Pt Spec
     /// Unfortunately tracing do not have "notice" level. So we need to use manual if+println! instead.
+    #[allow(clippy::print_stdout)]
     fn notice(message: &str) -> Result<()> {
         // Severity enum values:
         // Error = 0, Warn = 1, Notice = 2, Info = 3, Debug = 4, Trace = 5
@@ -277,7 +283,7 @@ impl TorPtCommunicator for PtTracing {
     ///
     /// `ENV-ERROR No TOR_PT_AUTH_COOKIE_FILE when TOR_PT_EXTENDED_SERVER_PORT set`
     fn env_error(msg: &str) {
-        println!("ENV-ERROR {msg}");
+        error!("ENV-ERROR {msg}");
     }
     /// When a PT proxy first starts up, it must determine which version of the
     /// Pluggable Transports Specification to use to configure itself.
@@ -299,7 +305,7 @@ impl TorPtCommunicator for PtTracing {
     ///
     /// PT proxies MUST terminate after outputting a “VERSION-ERROR” message.
     fn version_error(msg: &str) {
-        println!("VERSION-ERROR {}", &msg);
+        error!("VERSION-ERROR {}", &msg);
     }
     /// After negotiating the Pluggable Transport Specification version, PT client
     /// proxies MUST first validate `TOR_PT_PROXY` (3.2.2) if it is set, before
@@ -309,7 +315,7 @@ impl TorPtCommunicator for PtTracing {
     /// respond with a message indicating that the proxy is valid, supported, and
     /// will be used OR a failure message.
     fn proxy_done() {
-        println!("PROXY DONE");
+        error!("PROXY DONE");
     }
     /// The `VERSION` message is used to signal the Pluggable Transport
     /// Specification version that the PT proxy will use to configure its
@@ -326,7 +332,7 @@ impl TorPtCommunicator for PtTracing {
     ///
     /// `VERSION 1`
     fn version(version: &str) {
-        println!("VERSION {version}");
+        error!("VERSION {version}");
     }
 
     /// The `PROXY-ERROR` message is used to signal that the upstream proxy
@@ -340,7 +346,7 @@ impl TorPtCommunicator for PtTracing {
     ///
     /// `PROXY-ERROR SOCKS 4 upstream proxies unsupported.`
     fn proxy_error(msg: &str) {
-        println!("PROXY-ERROR {msg}");
+        error!("PROXY-ERROR {msg}");
     }
 
     /// The `CMETHOD` message is used to signal that a requested PT transport
@@ -354,7 +360,7 @@ impl TorPtCommunicator for PtTracing {
     ///
     /// `CMETHOD trebuchet socks5 127.0.0.1:19999`
     fn cmethod(transport: &str, proxy_type: &str, address: &str) {
-        println!("CMETHOD {transport} {proxy_type} {address}");
+        error!("CMETHOD {transport} {proxy_type} {address}");
     }
 
     /// The `CMETHOD-ERROR` message is used to signal that a requested PT
@@ -364,7 +370,7 @@ impl TorPtCommunicator for PtTracing {
     ///
     /// `CMETHOD-ERROR trebuchet no rocks available`
     fn cmethod_error(transport: &str, msg: &str) {
-        println!("CMETHOD-ERROR {transport} {msg}");
+        error!("CMETHOD-ERROR {transport} {msg}");
     }
 
     /// The `CMETHODS DONE` message signals that the PT proxy has finished
@@ -373,7 +379,7 @@ impl TorPtCommunicator for PtTracing {
     /// Upon sending the `CMETHODS DONE` message, the PT proxy initialization
     /// is complete.
     fn cmethods_done() {
-        println!("CMETHODS DONE");
+        error!("CMETHODS DONE");
     }
 
     /// The `SMETHOD` message is used to signal that a requested PT transport
@@ -392,10 +398,10 @@ impl TorPtCommunicator for PtTracing {
     fn smethod(transport: &str, address: &str, options: Option<&str>) {
         match options {
             Some(options) => {
-                println!("SMETHOD {transport} {address} {options}");
+                error!("SMETHOD {transport} {address} {options}");
             },
             None => {
-                println!("SMETHOD {transport} {address}");
+                error!("SMETHOD {transport} {address}");
             },
         }
     }
@@ -407,7 +413,7 @@ impl TorPtCommunicator for PtTracing {
     ///
     /// `SMETHOD-ERROR trebuchet no cows available`
     fn smethod_error(transport: &str, msg: &str) {
-        println!("SMETHOD-ERROR {transport} {msg}");
+        error!("SMETHOD-ERROR {transport} {msg}");
     }
     /// The `SMETHODS DONE` message signals that the PT proxy has finished
     /// initializing all of the transports that it is capable of handling.
@@ -415,7 +421,7 @@ impl TorPtCommunicator for PtTracing {
     /// Upon sending the `SMETHODS DONE` message, the PT proxy initialization
     /// is complete.
     fn smethods_done() {
-        println!("SMETHODS DONE");
+        error!("SMETHODS DONE");
     }
 }
 #[cfg(test)]

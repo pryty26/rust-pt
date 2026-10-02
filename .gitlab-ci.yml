@@ -1,0 +1,25 @@
+stages:
+  - test
+
+workflow:
+  rules:
+    - if: $CI_COMMIT_BRANCH && $CI_OPEN_MERGE_REQUESTS && $CI_PIPELINE_SOURCE == "push"
+      when: never
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_PIPELINE_SOURCE == "push"
+
+.rust_base:
+  image: rust:latest
+  before_script:
+    - rustup component add clippy
+    - rustc --version
+    - cargo --version
+
+test_job:
+  extends: .rust_base
+  stage: test
+  script:
+    - cargo clippy --workspace --all-targets --features full -- -D clippy::pedantic  -D clippy::missing_docs_in_private_items -D missing_docs -D clippy::all
+    - cargo test --workspace --all-targets --features full
+    - cargo clippy --workspace --all-targets -- -D clippy::pedantic  -D clippy::missing_docs_in_private_items -D missing_docs -D clippy::all
+    - cargo test --workspace --all-targets

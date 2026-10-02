@@ -27,3 +27,8 @@ getrandom = { workspace = true }
 async-trait = { workspace = true }
 tokio-util = { workspace = true }
 subtle = { workspace = true }
+
+[features]
+default = []
+extorport = []
+full = ["extorport"]

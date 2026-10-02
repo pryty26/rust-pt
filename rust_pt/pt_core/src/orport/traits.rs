@@ -2,7 +2,7 @@
 // Directory: rust_pt\pt_core\src\orport
 // Filename: traits.rs
 //======================================================================
-
+#[cfg(feature = "extorport")]
 use super::extorport::ExtOrPortReply;
 use async_trait::async_trait;
 use pt_err::ExtOrPortError;
@@ -69,6 +69,7 @@ pub trait ClientExtOrPortProtocol {
 ///
 ///   Parties MUST ignore command codes that they do not understand.
 /// ```
+#[cfg(feature = "extorport")]
 #[async_trait]
 pub trait ClientRecvExtOrPortProtocol {
     /// Receive a single reply from the server.

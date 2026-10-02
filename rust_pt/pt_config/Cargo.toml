@@ -31,3 +31,7 @@ dotenvy = { workspace = true }
 url = { workspace = true }
 thiserror = { workspace = true}
 envy = { workspace = true }
+
+[features]
+default = []
+full = []

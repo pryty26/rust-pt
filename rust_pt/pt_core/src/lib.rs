@@ -15,10 +15,8 @@
 #![allow(clippy::significant_drop_in_scrutinee)] // arti/-/merge_requests/588/#note_2812945
 #![allow(clippy::uninlined_format_args)]
 #![allow(mismatched_lifetime_syntaxes)] // temporary workaround for arti#2060
-#![warn(missing_docs)]
 #![warn(noop_method_call)]
 #![warn(unreachable_pub)]
-#![warn(clippy::all)]
 #![warn(clippy::manual_ok_or)]
 #![warn(clippy::needless_borrow)]
 #![warn(clippy::needless_pass_by_value)]
@@ -27,6 +25,7 @@
 #![warn(clippy::semicolon_if_nothing_returned)]
 #![warn(clippy::trait_duplication_in_bounds)]
 #![warn(clippy::unseparated_literal_suffix)]
+#![deny(clippy::all)]
 #![deny(clippy::await_holding_lock)]
 #![deny(clippy::cargo_common_metadata)]
 #![deny(clippy::cast_lossless)]
@@ -38,6 +37,7 @@
 #![deny(clippy::fallible_impl_from)]
 #![deny(clippy::implicit_clone)]
 #![deny(clippy::large_stack_arrays)]
+#![deny(missing_docs)]
 #![deny(clippy::missing_docs_in_private_items)]
 #![deny(clippy::mod_module_files)]
 #![deny(clippy::print_stderr)]
@@ -50,11 +50,13 @@
 #![deny(clippy::unwrap_used)]
 #![deny(clippy::pedantic)] // This is not in Arti
 //! <!-- @@ end lint list
-
+use pt_config::configs::keys::PtTransportName;
 /// Implementation for Extended and Normal `ORPort` for pluggable transports
 pub mod orport;
 /// Variables
 pub mod variables;
+#[cfg(feature = "extorport")]
+use crate::orport::extorport::ExtOrPort;
 use derive_deftly::Deftly;
 use pt_config::configs::keys::{ClientKey, CommonKey, ServerKey};
 use pt_config::derive_deftly_template_Builder;
@@ -62,25 +64,35 @@ use pt_config::prelude::*;
 use pt_err::PtError;
 use pt_tracing::prelude::*;
 use tokio::net::TcpStream;
-
-use crate::orport::extorport::ExtOrPort;
 /// Init the Pt
 pub mod init;
+use std::collections::HashSet;
 
+/// A place holder
+#[cfg(not(feature = "extorport"))]
+pub(crate) struct ExtOrPort;
 /// To use all the traits
 pub mod prelude {
     pub use crate::Pt;
     pub use crate::orport::traits::*;
 }
-
 /// The core config for PT
 /// User have to call the builder to build that
+/// When `with_sup_transports(...)` is set before `try_init()`,
+/// `Pt` validates every transport name and reports
+/// `cmethod_error` or `smethod_error` for unsupported ones.
+/// Same goes with `with_proxy_schemes(...)`
+///
 /// ```rust
 /// use pt_core::Pt;
 /// use pt_tracing::{prelude::*};
+/// use std::collections::HashSet;
 /// fn main() {
 ///     let pt = Pt::builder()
-///         .with_severity(SEVERITY::INFO);
+///         .with_severity(SEVERITY::INFO)
+///         .with_sup_transports(Some(vec!["rust-pt".to_string(), "uat".to_string()]))
+///         .with_proxy_schemes(Some(HashSet::from(["socks5".to_string(), "http".to_string()])));
+///     // Note that our builder do not have `build` func
 ///     // Then, user can call try_init(),
 ///     // but since we are not setting the env config in docs test,
 ///     // so just leave it for now
@@ -90,7 +102,7 @@ pub mod prelude {
 ///
 /// ```
 #[derive(Deftly)]
-#[derive_deftly(Builder)]
+#[derive_deftly(Builder)] // See [`rust-pt\rust_pt\pt_config\src\macros.rs`]
 #[non_exhaustive]
 pub struct Pt {
     /// The log severity
@@ -99,17 +111,29 @@ pub struct Pt {
     /// The Config key, user must not call `with_config_key(...)` to change that
     /// User must call `try_init()` to get the Config Key
     #[deftly(default = "None")]
-    pub config_key: Option<ConfigKey>,
+    pub(crate) config_key: Option<ConfigKey>,
     /// Optional `ExtOrPort` connection
     /// user must not call `with_extorport` to set that
     /// please call `Pt.try_extorport()`
     #[deftly(default = "None")]
-    pub extorport: Option<ExtOrPort>,
+    pub(crate) extorport: Option<ExtOrPort>,
     /// Optional `OrPort` connection,
     /// there should not have a `OrPort` connection,
     /// if there is already a `ExtOrPort` connection
     #[deftly(default = "None")]
     pub orport: Option<TcpStream>,
+    /// A field used to automatically filter out unsupported transports
+    /// Leaving for empty means skip
+    #[deftly(default = "None")]
+    pub sup_transports: Option<Vec<PtTransportName>>,
+    /// A field used to automatically filter out unsupported proxy url
+    /// Leaving for empty means skip
+    /// Valit options:
+    /// `socks4a`
+    /// `socks5`
+    /// `http`
+    #[deftly(default = "None")]
+    pub proxy_schemes: Option<HashSet<String>>,
 }
 
 impl Pt {
@@ -161,6 +185,47 @@ impl Pt {
             },
         }
     }
+    /// get the config as mutable
+    /// # Errors
+    /// if Pt is not initialized
+    pub fn get_mut(&mut self) -> Result<&mut ConfigKey, PtError> {
+        self.config_key
+            .as_mut()
+            .ok_or_else(|| PtError::PtNotInitialized("Please call Pt.try_init()".to_string()))
+    }
+    /// Get the config as mutable, and ensure that it is `ClientConfig`.
+    /// Only return the `client_key` part.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error
+    /// - `Pt` is not initialized
+    /// - the config is not for a client.
+    pub fn get_client_config_mut(&mut self) -> Result<&mut ClientKey, PtError> {
+        match self.get_mut()? {
+            ConfigKey::Client { client_key, .. } => Ok(client_key),
+            ConfigKey::Server { .. } => Err(PtError::NotInClient(
+                "get_client_config_mut error".to_string(),
+            )),
+        }
+    }
+
+    /// Get the config as mutable, and ensure that it is `ServerConfig`.
+    /// Only return the `server_key` part.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error
+    /// - `Pt` is not initialized
+    /// - the config is not for a server.
+    pub fn get_server_config_mut(&mut self) -> Result<&mut ServerKey, PtError> {
+        match self.get_mut()? {
+            ConfigKey::Server { server_key, .. } => Ok(server_key),
+            ConfigKey::Client { .. } => Err(PtError::NotInServer(
+                "get_server_config_mut error".to_string(),
+            )),
+        }
+    }
     /// Get the common config of the config
     /// # Errors
     ///
@@ -176,6 +241,14 @@ impl Pt {
     /// Check if the connection is `OrPort`
     pub fn is_orport(&self) -> bool {
         self.orport.is_some()
+    }
+}
+
+#[cfg(feature = "extorport")]
+impl Pt {
+    /// Split the `ExtOrPort` connection from the `Pt`
+    pub fn split_extorport(&mut self) -> Option<ExtOrPort> {
+        self.extorport.take()
     }
 }
 
