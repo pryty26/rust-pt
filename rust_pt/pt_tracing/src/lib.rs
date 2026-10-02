@@ -15,10 +15,8 @@
 #![allow(clippy::significant_drop_in_scrutinee)] // arti/-/merge_requests/588/#note_2812945
 #![allow(clippy::uninlined_format_args)]
 #![allow(mismatched_lifetime_syntaxes)] // temporary workaround for arti#2060
-#![warn(missing_docs)]
 #![warn(noop_method_call)]
 #![warn(unreachable_pub)]
-#![warn(clippy::all)]
 #![warn(clippy::manual_ok_or)]
 #![warn(clippy::needless_borrow)]
 #![warn(clippy::needless_pass_by_value)]
@@ -27,6 +25,7 @@
 #![warn(clippy::semicolon_if_nothing_returned)]
 #![warn(clippy::trait_duplication_in_bounds)]
 #![warn(clippy::unseparated_literal_suffix)]
+#![deny(clippy::all)]
 #![deny(clippy::await_holding_lock)]
 #![deny(clippy::cargo_common_metadata)]
 #![deny(clippy::cast_lossless)]
@@ -38,6 +37,7 @@
 #![deny(clippy::fallible_impl_from)]
 #![deny(clippy::implicit_clone)]
 #![deny(clippy::large_stack_arrays)]
+#![deny(missing_docs)]
 #![deny(clippy::missing_docs_in_private_items)]
 #![deny(clippy::mod_module_files)]
 #![deny(clippy::print_stderr)]
@@ -48,7 +48,7 @@
 #![deny(clippy::unnecessary_wraps)]
 #![deny(clippy::unused_async)]
 #![deny(clippy::unwrap_used)]
-#![deny(clippy::pedantic)] // This is not in Arti
+#![deny(clippy::pedantic)]  // This is not in Arti
 //! <!-- @@ end lint list
 
 //! For detailed information, see [the spec] https://spec.torproject.org/pt-spec/ipc.html
