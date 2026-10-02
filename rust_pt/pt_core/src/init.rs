@@ -85,6 +85,10 @@ pub fn cmethod_hash_filter(strs: &[String], supported: &[String]) -> Vec<String>
 }
 
 impl Pt {
+    /// Filters the PT's transports against `sup_transports`, dropping unsupported
+    /// ones. Client filters `TOR_PT_CLIENT_TRANSPORTS` via `cmethod_filter`;
+    /// server filters `TOR_PT_SERVER_TRANSPORTS` via `smethod_filter`.
+    /// No-op if `sup_transports` is `None`.
     /// # Errors
     /// - Pt is never initiated
     pub fn filter_transports(&mut self) -> Result<(), PtError> {
@@ -95,10 +99,30 @@ impl Pt {
                     cmethod_filter(&config.TOR_PT_CLIENT_TRANSPORTS, &supported_transports);
                 config.TOR_PT_CLIENT_TRANSPORTS = filtered;
             } else {
+                // It should be server
                 let config = self.get_server_config_mut()?;
                 let filtered =
                     smethod_filter(&config.TOR_PT_SERVER_TRANSPORTS, &supported_transports);
                 config.TOR_PT_SERVER_TRANSPORTS = filtered;
+            }
+        }
+        Ok(())
+    }
+    /// # Panics
+    /// - if an unsupported scheme exists
+    /// # Errors
+    /// if the Pt is never inited
+    pub fn filter_url(&mut self) -> Result<(), PtError> {
+        #[allow(clippy::collapsible_if)] // This is for making sure that there `is_client()`
+        if self.is_client()?
+            && let Some(supported_schemes) = &self.proxy_schemes
+        {
+            if let Some(url) = &self.get_client_config()?.TOR_PT_PROXY {
+                let scheme = url.scheme();
+                if !supported_schemes.contains(scheme) {
+                    PtTracing::env_error("Invalid proxy url");
+                    panic!("Unsupported url {scheme}")
+                }
             }
         }
         Ok(())
@@ -123,6 +147,9 @@ impl Pt {
         PtTracing::notice("initing the Pt")?; // Could Panic (See docs of notice())
         self.config_key = {
             let config_key = ConfigKey::init();
+            // Filter the unsupported transports
+            self.filter_transports()?;
+            self.filter_url()?;
             // Invariant: the `TOR_PT_MANAGED_TRANSPORT_VER` must not be empty
             // But we have already made sure in deserialization's validation, that it is not empty
             // Thus, it is safe here

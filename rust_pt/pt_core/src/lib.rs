@@ -58,8 +58,8 @@ pub mod variables;
 use crate::orport::extorport::ExtOrPort;
 use derive_deftly::Deftly;
 use pt_config::configs::keys::{ClientKey, CommonKey, ServerKey};
+use pt_config::derive_deftly_template_Builder;
 use pt_config::prelude::*;
-use pt_config::{derive_deftly_template_Builder, derive_deftly_template_FromString};
 use pt_err::PtError;
 use pt_tracing::prelude::*;
 use tokio::net::TcpStream;
@@ -118,21 +118,9 @@ pub struct Pt {
     /// A field used to automatically filter out unsupported proxy url
     /// Leaving for empty means skip
     #[deftly(default = "None")]
-    pub proxy_schemes: Option<HashSet<ProxySchemes>>,
+    pub proxy_schemes: Option<HashSet<String>>,
 }
 
-/// Supported options of scheme
-#[derive(Clone, Deftly, Debug, PartialEq)]
-#[derive_deftly(FromString)]
-#[non_exhaustive]
-pub enum ProxySchemes {
-    /// `Socks5`
-    Socks5,
-    /// `Socks4A`
-    Socks4A,
-    /// `Http`
-    Http,
-}
 impl Pt {
     /// get the config
     /// # Errors
