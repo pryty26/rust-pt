@@ -130,7 +130,6 @@ async fn main() -> anyhow::Result<()> {
     Ok(())
 }
 
-async fn super_cool_launch(addr: SocketAddr) -> anyhow::Result<SocketAddr> {
-    TcpListener::bind(addr).await?;
-    Ok(addr)
+async fn super_cool_launch(addr: SocketAddr) -> anyhow::Result<TcpListener> {
+    Ok(TcpListener::bind(addr).await?)
 }

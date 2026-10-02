@@ -55,6 +55,7 @@ use pt_config::configs::keys::PtTransportName;
 pub mod orport;
 /// Variables
 pub mod variables;
+#[cfg(feature = "extorport")]
 use crate::orport::extorport::ExtOrPort;
 use derive_deftly::Deftly;
 use pt_config::configs::keys::{ClientKey, CommonKey, ServerKey};
@@ -65,7 +66,9 @@ use pt_tracing::prelude::*;
 use tokio::net::TcpStream;
 /// Init the Pt
 pub mod init;
-
+#[cfg(not(feature = "extorport"))]
+/// An empty placeholder
+pub(crate) struct ExtOrPort;
 /// To use all the traits
 pub mod prelude {
     pub use crate::Pt;

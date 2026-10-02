@@ -12,3 +12,7 @@ categories.workspace = true
 thiserror = { workspace = true }
 derive-deftly = { workspace =  true }
 anyhow = { workspace = true }
+
+[features]
+default = []
+full = []

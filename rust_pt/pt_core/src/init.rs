@@ -2,10 +2,13 @@
 // Directory: rust_pt\pt_core\src
 // Filename: init.rs
 //======================================================================
+#[cfg(feature = "extorport")]
 use crate::orport::extorport::ExtOrPort;
+#[cfg(feature = "extorport")]
 use crate::orport::traits::ClientExtOrPortProtocol;
 use crate::{OrPortKind, Pt};
 use anyhow::Result;
+#[cfg(feature = "extorport")]
 use pt_config::configs::keys::PtTransportName;
 use pt_config::prelude::*;
 use pt_err::PtError;
@@ -163,6 +166,7 @@ impl Pt {
     ///
     /// # Errors
     /// if Pt is not initialized
+    #[cfg(feature = "extorport")]
     pub async fn try_extorport(&mut self) -> Result<(), PtError> {
         let server_key = self.get_server_config()?;
         if let Some(ext_addr) = server_key.TOR_PT_EXTENDED_SERVER_PORT
@@ -195,6 +199,7 @@ impl Pt {
         if self.is_client()? {
             return Err(PtError::ClientOrPortUnavailable);
         }
+        #[cfg(feature = "extorport")]
         match self.try_extorport().await {
             Ok(()) => Ok(OrPortKind::ExtOrPort),
             Err(PtError::ExtOrPortNotAvailable(_)) => {
@@ -210,9 +215,21 @@ impl Pt {
             },
             Err(e) => Err(e),
         }
+        #[cfg(not(feature = "extorport"))] // Try to connect to the OrPort
+        {
+            if let Some(addr) = self.get_server_config()?.TOR_PT_ORPORT {
+                self.orport = Some(TcpStream::connect(addr).await?);
+                return Ok(OrPortKind::OrPort);
+            }
+            PtTracing::error("Config poisoned, OrPort unavailable and ExtOrPort not enabled")?;
+            Err(PtError::PtConfigPoisoned(
+                "Config poisoned, OrPort unavailable and ExtOrPort not enabled".to_string(),
+            ))
+            
+        }
     }
 }
-
+#[cfg(feature = "extorport")]
 impl Pt {
     /// As of September 2026, the pt-spec does not state when the server
     /// should return `OKAY` or `DENY`.
