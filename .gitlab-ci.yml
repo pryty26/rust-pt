@@ -19,7 +19,7 @@ test_job:
   extends: .rust_base
   stage: test
   script:
-    - cargo clippy --all --features full
-    - cargo test --all --features full
-    - cargo clippy --all
-    - cargo test --all
+    - cargo clippy --workspace --all-targets --features full -- -D clippy::pedantic
+    - cargo test --workspace --all-targets --features full
+    - cargo clippy --workspace --all-targets -- -D clippy::pedantic
+    - cargo test --workspace --all-targets
