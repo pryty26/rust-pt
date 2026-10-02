@@ -78,6 +78,10 @@ pub mod prelude {
 }
 /// The core config for PT
 /// User have to call the builder to build that
+/// When `with_sup_transports(...)` is set before `try_init()`,
+/// `Pt` validates every transport name and reports
+/// `cmethod_error` or `smethod_error` for unsupported ones.
+/// Same goes with `with_proxy_schemes(...)`
 ///
 /// ```rust
 /// use pt_core::Pt;
@@ -124,6 +128,10 @@ pub struct Pt {
     pub sup_transports: Option<Vec<PtTransportName>>,
     /// A field used to automatically filter out unsupported proxy url
     /// Leaving for empty means skip
+    /// Valit options:
+    /// `socks4a`
+    /// `socks5`
+    /// `http`
     #[deftly(default = "None")]
     pub proxy_schemes: Option<HashSet<String>>,
 }
