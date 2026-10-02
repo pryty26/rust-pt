@@ -1,0 +1,17 @@
+stages:
+  - test
+
+.rust_base:
+  image: rust:latest
+  before_script:
+    - rustc --version
+    - cargo --version
+
+test_job:
+  extends: .rust_base
+  stage: test
+  script:
+    - cargo clippy --all --features full
+    - cargo test --all --features full
+    - cargo clippy --all
+    - cargo test --all
