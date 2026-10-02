@@ -48,7 +48,7 @@
 #![deny(clippy::unnecessary_wraps)]
 #![deny(clippy::unused_async)]
 #![deny(clippy::unwrap_used)]
-#![deny(clippy::pedantic)]  // This is not in Arti
+#![deny(clippy::pedantic)] // This is not in Arti
 //! <!-- @@ end lint list
 
 #![allow(clippy::pedantic)]
@@ -69,15 +69,14 @@ use pt_err::PtError;
 use pt_tracing::{SEVERITY, prelude::*};
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-    let mut pt: Pt = Pt::builder().with_severity(SEVERITY::INFO);
+    let mut pt: Pt = Pt::builder()
+        .with_severity(SEVERITY::INFO)
+        .with_sup_transports(Some(vec!["cool_transport".to_string()]));
     pt.try_init()?;
     if pt.is_server()? {
         let server_config: &ServerKey = pt.get_server_config()?;
         let server_transports = server_config.TOR_PT_SERVER_TRANSPORTS.clone();
         for transport in server_transports.iter() {
-            if transport != "super_cool_launch" {
-                PtTracing::smethod_error(transport, "Unsupported transport");
-            }
             let addr = "127.0.0.1:2837".parse::<SocketAddr>()?;
             super_cool_launch(addr).await?;
             // ( PTs should launch their PT here, and check whether they supports that transport)
@@ -86,7 +85,8 @@ async fn main() -> anyhow::Result<()> {
                 OrPortKind::ExtOrPort => {
                     // Finish Sends the full `ExtOrPort` handshake for a new client connection:
                     // `TRANSPORT` → `USERADDR` → `DONE`/`OKAY`.
-                    pt.finish(transport.into(), addr.to_string()).await?;
+                    pt.finish("cool_transport".to_string(), addr.to_string())
+                        .await?;
                 },
                 OrPortKind::OrPort => {},
             }

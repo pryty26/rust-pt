@@ -225,7 +225,6 @@ impl Pt {
             Err(PtError::PtConfigPoisoned(
                 "Config poisoned, OrPort unavailable and ExtOrPort not enabled".to_string(),
             ))
-            
         }
     }
 }

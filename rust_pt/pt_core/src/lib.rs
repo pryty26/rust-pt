@@ -48,7 +48,7 @@
 #![deny(clippy::unnecessary_wraps)]
 #![deny(clippy::unused_async)]
 #![deny(clippy::unwrap_used)]
-#![deny(clippy::pedantic)]  // This is not in Arti
+#![deny(clippy::pedantic)] // This is not in Arti
 //! <!-- @@ end lint list
 use pt_config::configs::keys::PtTransportName;
 /// Implementation for Extended and Normal `ORPort` for pluggable transports
@@ -66,24 +66,28 @@ use pt_tracing::prelude::*;
 use tokio::net::TcpStream;
 /// Init the Pt
 pub mod init;
+use std::collections::HashSet;
+
+/// A place holder
 #[cfg(not(feature = "extorport"))]
-/// An empty placeholder
 pub(crate) struct ExtOrPort;
 /// To use all the traits
 pub mod prelude {
     pub use crate::Pt;
     pub use crate::orport::traits::*;
 }
-use std::collections::HashSet;
 /// The core config for PT
 /// User have to call the builder to build that
 ///
 /// ```rust
 /// use pt_core::Pt;
 /// use pt_tracing::{prelude::*};
+/// use std::collections::HashSet;
 /// fn main() {
 ///     let pt = Pt::builder()
-///         .with_severity(SEVERITY::INFO);
+///         .with_severity(SEVERITY::INFO)
+///         .with_sup_transports(Some(vec!["rust-pt".to_string(), "uat".to_string()]))
+///         .with_proxy_schemes(Some(HashSet::from(["socks5".to_string(), "http".to_string()])));
 ///     // Note that our builder do not have `build` func
 ///     // Then, user can call try_init(),
 ///     // but since we are not setting the env config in docs test,
@@ -103,12 +107,12 @@ pub struct Pt {
     /// The Config key, user must not call `with_config_key(...)` to change that
     /// User must call `try_init()` to get the Config Key
     #[deftly(default = "None")]
-    pub config_key: Option<ConfigKey>,
+    pub(crate) config_key: Option<ConfigKey>,
     /// Optional `ExtOrPort` connection
     /// user must not call `with_extorport` to set that
     /// please call `Pt.try_extorport()`
     #[deftly(default = "None")]
-    pub extorport: Option<ExtOrPort>,
+    pub(crate) extorport: Option<ExtOrPort>,
     /// Optional `OrPort` connection,
     /// there should not have a `OrPort` connection,
     /// if there is already a `ExtOrPort` connection
@@ -229,6 +233,14 @@ impl Pt {
     /// Check if the connection is `OrPort`
     pub fn is_orport(&self) -> bool {
         self.orport.is_some()
+    }
+}
+
+#[cfg(feature = "extorport")]
+impl Pt {
+    /// Split the `ExtOrPort` connection from the `Pt`
+    pub fn split_extorport(&mut self) -> Option<ExtOrPort> {
+        self.extorport.take()
     }
 }
 
