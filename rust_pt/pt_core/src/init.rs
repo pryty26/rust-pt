@@ -13,10 +13,35 @@ use pt_tracing::prelude::*;
 use std::collections::HashSet;
 use tokio::net::TcpStream;
 /// Filters `strs`, keeping only elements present in `supported`, preserving order.
+/// Used for `smethod` transports
 #[must_use]
-pub fn filter(strs: &[String], supported: &[String]) -> Vec<String> {
+pub fn smethod_filter(strs: &[String], supported: &[String]) -> Vec<String> {
     strs.iter()
-        .filter(|v| supported.contains(v))
+        .filter(|v| {
+            if supported.contains(v) {
+                true
+            } else {
+                PtTracing::smethod_error(v, "Unsupported smethod transport");
+                false
+            }
+        })
+        .cloned()
+        .collect()
+}
+
+/// Filters `strs`, keeping only elements present in `supported`, preserving order.
+/// Used for `cmethod` transports
+#[must_use]
+pub fn cmethod_filter(strs: &[String], supported: &[String]) -> Vec<String> {
+    strs.iter()
+        .filter(|v| {
+            if supported.contains(v) {
+                true
+            } else {
+                PtTracing::cmethod_error(v, "Unsupported cmethod transport");
+                false
+            }
+        })
         .cloned()
         .collect()
 }
@@ -25,10 +50,36 @@ pub fn filter(strs: &[String], supported: &[String]) -> Vec<String> {
 /// Will build a `HashSet` for performance
 /// ( I know that may be useless, but what if there is a pro developer needs that?)
 #[must_use]
-pub fn hash_filter(strs: &[String], supported: &[String]) -> Vec<String> {
+pub fn smethod_hash_filter(strs: &[String], supported: &[String]) -> Vec<String> {
     let set: HashSet<&str> = supported.iter().map(String::as_str).collect();
     strs.iter()
-        .filter(|v| set.contains(v.as_str()))
+        .filter(|v| {
+            if set.contains(v.as_str()) {
+                true
+            } else {
+                PtTracing::smethod_error(v, "Unsupported transport");
+                false
+            }
+        })
+        .cloned()
+        .collect()
+}
+
+/// Filters `strs`, keeping only elements present in `supported`, preserving order.
+/// Will build a `HashSet` for performance
+/// ( I know that may be useless, but what if there is a pro developer needs that?)
+#[must_use]
+pub fn cmethod_hash_filter(strs: &[String], supported: &[String]) -> Vec<String> {
+    let set: HashSet<&str> = supported.iter().map(String::as_str).collect();
+    strs.iter()
+        .filter(|v| {
+            if set.contains(v.as_str()) {
+                true
+            } else {
+                PtTracing::cmethod_error(v, "Unsupported transport");
+                false
+            }
+        })
         .cloned()
         .collect()
 }
@@ -40,11 +91,13 @@ impl Pt {
         if let Some(supported_transports) = self.sup_transports.clone() {
             if self.is_client()? {
                 let config = self.get_client_config_mut()?;
-                let filtered = filter(&config.TOR_PT_CLIENT_TRANSPORTS, &supported_transports);
+                let filtered =
+                    cmethod_filter(&config.TOR_PT_CLIENT_TRANSPORTS, &supported_transports);
                 config.TOR_PT_CLIENT_TRANSPORTS = filtered;
             } else {
                 let config = self.get_server_config_mut()?;
-                let filtered = filter(&config.TOR_PT_SERVER_TRANSPORTS, &supported_transports);
+                let filtered =
+                    smethod_filter(&config.TOR_PT_SERVER_TRANSPORTS, &supported_transports);
                 config.TOR_PT_SERVER_TRANSPORTS = filtered;
             }
         }
