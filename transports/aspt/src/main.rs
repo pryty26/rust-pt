@@ -84,7 +84,8 @@ async fn main() -> anyhow::Result<()> {
             PtTracing::smethod(transport, &addr.to_string(), None);
             match pt.connect_or().await? {
                 OrPortKind::ExtOrPort => {
-                    // Remember send `Okay`
+                    // Finish Sends the full `ExtOrPort` handshake for a new client connection:
+                    // `TRANSPORT` → `USERADDR` → `DONE`/`OKAY`.
                     pt.finish(transport.into(), addr.to_string()).await?;
                 },
                 OrPortKind::OrPort => {},

@@ -55,14 +55,14 @@ use pt_config::configs::keys::PtTransportName;
 pub mod orport;
 /// Variables
 pub mod variables;
+use crate::orport::extorport::ExtOrPort;
 use derive_deftly::Deftly;
 use pt_config::configs::keys::{ClientKey, CommonKey, ServerKey};
-use pt_config::{derive_deftly_template_Builder, derive_deftly_template_FromString};
 use pt_config::prelude::*;
+use pt_config::{derive_deftly_template_Builder, derive_deftly_template_FromString};
 use pt_err::PtError;
 use pt_tracing::prelude::*;
 use tokio::net::TcpStream;
-use crate::orport::extorport::ExtOrPort;
 /// Init the Pt
 pub mod init;
 
@@ -74,7 +74,7 @@ pub mod prelude {
 use std::collections::HashSet;
 /// The core config for PT
 /// User have to call the builder to build that
-/// 
+///
 /// ```rust
 /// use pt_core::Pt;
 /// use pt_tracing::{prelude::*};
@@ -112,11 +112,11 @@ pub struct Pt {
     #[deftly(default = "None")]
     pub orport: Option<TcpStream>,
     /// A field used to automatically filter out unsupported transports
-    /// Leaving for empty means skip 
+    /// Leaving for empty means skip
     #[deftly(default = "None")]
-    pub transports: Option<Vec<PtTransportName>>,
+    pub sup_transports: Option<Vec<PtTransportName>>,
     /// A field used to automatically filter out unsupported proxy url
-    /// Leaving for empty means skip 
+    /// Leaving for empty means skip
     #[deftly(default = "None")]
     pub proxy_schemes: Option<HashSet<ProxySchemes>>,
 }
@@ -180,6 +180,47 @@ impl Pt {
             ConfigKey::Server { .. } => {
                 Err(PtError::NotInClient("get_client_config error".to_string()))
             },
+        }
+    }
+    /// get the config as mutable
+    /// # Errors
+    /// if Pt is not initialized
+    pub fn get_mut(&mut self) -> Result<&mut ConfigKey, PtError> {
+        self.config_key
+            .as_mut()
+            .ok_or_else(|| PtError::PtNotInitialized("Please call Pt.try_init()".to_string()))
+    }
+    /// Get the config as mutable, and ensure that it is `ClientConfig`.
+    /// Only return the `client_key` part.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error
+    /// - `Pt` is not initialized
+    /// - the config is not for a client.
+    pub fn get_client_config_mut(&mut self) -> Result<&mut ClientKey, PtError> {
+        match self.get_mut()? {
+            ConfigKey::Client { client_key, .. } => Ok(client_key),
+            ConfigKey::Server { .. } => Err(PtError::NotInClient(
+                "get_client_config_mut error".to_string(),
+            )),
+        }
+    }
+
+    /// Get the config as mutable, and ensure that it is `ServerConfig`.
+    /// Only return the `server_key` part.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error
+    /// - `Pt` is not initialized
+    /// - the config is not for a server.
+    pub fn get_server_config_mut(&mut self) -> Result<&mut ServerKey, PtError> {
+        match self.get_mut()? {
+            ConfigKey::Server { server_key, .. } => Ok(server_key),
+            ConfigKey::Client { .. } => Err(PtError::NotInServer(
+                "get_server_config_mut error".to_string(),
+            )),
         }
     }
     /// Get the common config of the config

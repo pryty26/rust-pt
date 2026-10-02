@@ -6,11 +6,52 @@ use crate::orport::extorport::ExtOrPort;
 use crate::orport::traits::ClientExtOrPortProtocol;
 use crate::{OrPortKind, Pt};
 use anyhow::Result;
+use pt_config::configs::keys::PtTransportName;
 use pt_config::prelude::*;
 use pt_err::PtError;
 use pt_tracing::prelude::*;
+use std::collections::HashSet;
 use tokio::net::TcpStream;
-use pt_config::configs::keys::PtTransportName;
+/// Filters `strs`, keeping only elements present in `supported`, preserving order.
+#[must_use]
+pub fn filter(strs: &[String], supported: &[String]) -> Vec<String> {
+    strs.iter()
+        .filter(|v| supported.contains(v))
+        .cloned()
+        .collect()
+}
+
+/// Filters `strs`, keeping only elements present in `supported`, preserving order.
+/// Will build a `HashSet` for performance
+/// ( I know that may be useless, but what if there is a pro developer needs that?)
+#[must_use]
+pub fn hash_filter(strs: &[String], supported: &[String]) -> Vec<String> {
+    let set: HashSet<&str> = supported.iter().map(String::as_str).collect();
+    strs.iter()
+        .filter(|v| set.contains(v.as_str()))
+        .cloned()
+        .collect()
+}
+
+impl Pt {
+    /// # Errors
+    /// - Pt is never initiated
+    pub fn filter_transports(&mut self) -> Result<(), PtError> {
+        if let Some(supported_transports) = self.sup_transports.clone() {
+            if self.is_client()? {
+                let config = self.get_client_config_mut()?;
+                let filtered = filter(&config.TOR_PT_CLIENT_TRANSPORTS, &supported_transports);
+                config.TOR_PT_CLIENT_TRANSPORTS = filtered;
+            } else {
+                let config = self.get_server_config_mut()?;
+                let filtered = filter(&config.TOR_PT_SERVER_TRANSPORTS, &supported_transports);
+                config.TOR_PT_SERVER_TRANSPORTS = filtered;
+            }
+        }
+        Ok(())
+    }
+}
+
 impl Pt {
     /// Init the Pt
     /// Including configs, and Logs
@@ -97,7 +138,7 @@ impl Pt {
     /// should return `OKAY` or `DENY`.
     /// But in C-tor and goptlib, code shows that server will return `Okay` after sending `done`
     /// Therefore, this function is here
-    /// 
+    ///
     /// # Errors
     /// - if tokio `write_all(...)` returns Error
     /// - if the stream is missing
@@ -132,7 +173,7 @@ impl Pt {
     ///
     /// Other formats MAY be accepted by current Tor versions, but transports
     /// MUST NOT send them.
-    /// 
+    ///
     /// # Note
     /// User have to make sure the `addr` is valid
     /// # Errors
@@ -156,7 +197,7 @@ impl Pt {
 
     /// Sends a `TRANSPORT` command to the `ExtOrPort` server, informing it of the
     /// name of the pluggable transport in use.
-    /// 
+    ///
     /// # Errors
     /// - if tokio `write_all(...)` returns an Error.
     /// - [`PtError::NotExtOrPort`] if no `ExtOrPort` connection has been
@@ -193,7 +234,11 @@ impl Pt {
     /// - Any error returned by [`Pt::done_wait`], including
     ///   [`ExtOrPortError::StreamMissing`] if the reader half is not set, or
     ///   [`ExtOrPortError::Other`] on an I/O failure while awaiting `OKAY`.
-    pub async fn finish(&mut self, pt_name: PtTransportName, client_addr: String) -> Result<(), PtError> {
+    pub async fn finish(
+        &mut self,
+        pt_name: PtTransportName,
+        client_addr: String,
+    ) -> Result<(), PtError> {
         self.transport(pt_name).await?;
         self.user_addr(client_addr).await?;
         self.done_wait().await?;
