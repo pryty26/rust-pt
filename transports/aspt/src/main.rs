@@ -74,7 +74,10 @@ async fn main() -> anyhow::Result<()> {
     let mut pt: Pt = Pt::builder()
         .with_severity(SEVERITY::INFO)
         .with_sup_transports(Some(vec!["cool_transport".to_string()]))
-        .with_proxy_schemes(Some(HashSet::from(["socks5".to_string(), "http".to_string()])));
+        .with_proxy_schemes(Some(HashSet::from([
+            "socks5".to_string(),
+            "http".to_string(),
+        ])));
     pt.try_init()?;
     if pt.is_server()? {
         let server_config: &ServerKey = pt.get_server_config()?;
