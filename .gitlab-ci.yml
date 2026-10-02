@@ -8,9 +8,16 @@ workflow:
     
 .rust_base:
   image: rust:latest
+  cache:
+    key: rustup
+    paths:
+      - .rustup/
+  variables:
+    RUSTUP_HOME: "$CI_PROJECT_DIR/.rustup"
   before_script:
     - rustc --version
     - cargo --version
+    - rustup component add clippy
 
 test_job:
   extends: .rust_base
