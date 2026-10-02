@@ -19,7 +19,7 @@ test_job:
   extends: .rust_base
   stage: test
   script:
-    - cargo clippy --workspace --all-targets --features full -- -D clippy::pedantic
+    - cargo clippy --workspace --all-targets --features full -- -D clippy::pedantic  -D clippy::missing_docs_in_private_items -D clippy::missing_docs -D clippy::all
     - cargo test --workspace --all-targets --features full
-    - cargo clippy --workspace --all-targets -- -D clippy::pedantic
+    - cargo clippy --workspace --all-targets -- -D clippy::pedantic  -D clippy::missing_docs_in_private_items -D clippy::missing_docs -D clippy::all
     - cargo test --workspace --all-targets
