@@ -1,6 +1,11 @@
 stages:
   - test
 
+workflow:
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "push"
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    
 .rust_base:
   image: rust:latest
   before_script:
