@@ -1,13 +1,13 @@
-Copyright (C) [2026] [pryty26 (Yang Hu)]
+Copyright (c) 2026 pryty26(Yang Hu)
 
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
+SPDX-License-Identifier: MIT OR Apache-2.0 OR AGPL-3.0-or-later
 
-    http://www.apache.org/licenses/LICENSE-2.0
+This project is licensed under the terms of any one of the following
+licenses, at your option:
 
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
+1. MIT License (see COPYING.mit)
+2. Apache License 2.0 (see COPYING.Apache-2.0)
+3. GNU Affero General Public License v3.0-or-later (see COPYING.agpl)
+
+You may choose to use, modify, and distribute this software under the
+terms of any one of the above licenses.
