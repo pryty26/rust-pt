@@ -296,14 +296,13 @@ pub fn validate_proxy_url(spec: &Url) -> Result<(), ClientKeyConfigError> {
                 }
             }
         },
-        "socks4a" => {
+        "socks4a" | "socks4" => {
             if spec.password().is_some() {
                 return Err(ClientKeyConfigError::InvalidTOR_PT_PROXY {
-                    message: "proxy URI specified SOCKS4a and a password".to_string(),
+                    message: "proxy URI specified SOCKS4/SOCKS4a and a password".to_string(),
                 });
             }
         },
-        "http" => {},
         _ => {
             return Err(ClientKeyConfigError::InvalidTOR_PT_PROXY {
                 message: format!("proxy URI has invalid scheme: {}", spec.scheme()),

@@ -91,7 +91,7 @@ pub mod prelude {
 ///     let pt = Pt::builder()
 ///         .with_severity(SEVERITY::INFO)
 ///         .with_sup_transports(Some(vec!["rust-pt".to_string(), "uat".to_string()]))
-///         .with_proxy_schemes(Some(HashSet::from(["socks5".to_string(), "http".to_string()])));
+///         .with_proxy_schemes(Some(HashSet::from(["socks5".to_string()])));
 ///     // Note that our builder do not have `build` func
 ///     // Then, user can call try_init(),
 ///     // but since we are not setting the env config in docs test,
@@ -128,10 +128,10 @@ pub struct Pt {
     pub sup_transports: Option<Vec<PtTransportName>>,
     /// A field used to automatically filter out unsupported proxy url
     /// Leaving for empty means skip
-    /// Valit options:
-    /// `socks4a`
-    /// `socks5`
-    /// `http`
+    /// Valid field:
+    /// "socks4"
+    /// "socks4a"
+    /// "socks5"
     #[deftly(default = "None")]
     pub proxy_schemes: Option<HashSet<String>>,
 }
