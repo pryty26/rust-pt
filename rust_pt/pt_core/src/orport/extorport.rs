@@ -5,7 +5,7 @@
 
 //! See: (https://spec.torproject.org/ext-orport-spec.html)
 use super::traits::ClientRecvExtOrPortProtocol;
-use crate::variables::StaticHeader;
+use crate::variables::STATIC_HEADER;
 use anyhow::{Result, anyhow};
 use async_trait::async_trait;
 use derive_deftly::Deftly;
@@ -361,7 +361,7 @@ impl ExtOrPort {
     ///     cookie is called CookieString.
     /// Extended ORPort clients MUST make sure that the StaticHeader is present in the cookie file,
     /// before proceeding with the authentication protocol.
-    /// ```    
+    /// ```
     /// # Errors
     /// returns Error if `auth_cookie_file` contains invalid content
     /// e.g, Invalid length,
@@ -376,7 +376,7 @@ impl ExtOrPort {
             .map_err(|e: TryFromSliceError| anyhow!(e))?;
         // If static_cookie is not equal to "! Extended ORPort Auth Cookie !\x0a"
         // we must raise an Error
-        if static_cookie != StaticHeader {
+        if static_cookie != STATIC_HEADER {
             return Err(ExtOrPortError::InvalidStaticHeader);
         }
         let cookie_string: CookieString = contents
@@ -411,7 +411,7 @@ impl ExtOrPort {
         mac_message(cookie, &message)
     }
     /// Build `ServerHash`
-    /// ```test
+    /// ```text
     ///
     /// + ServerHash is computed as:
     ///     HMAC-SHA256(CookieString,

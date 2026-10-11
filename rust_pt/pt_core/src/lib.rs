@@ -66,6 +66,8 @@ use pt_tracing::prelude::*;
 use tokio::net::TcpStream;
 /// Init the Pt
 pub mod init;
+/// Socks
+pub mod socks;
 use std::collections::HashSet;
 
 /// A place holder

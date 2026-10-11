@@ -139,8 +139,8 @@ pub enum PtError {
     /// `ExtOrPort` is not set
     #[error("ExtOrPort unfound {0}")]
     ExtOrPortNotAvailable(String),
-    #[error("ExtOrPortError: {0}")]
     /// Error for `ExtOrPortError`
+    #[error("ExtOrPortError: {0}")]
     ExtOrPort(#[from] ExtOrPortError),
     /// User called some feature that needs `ExtOrPort` connection be ready
     #[error("Connection is not ExtOrPort or not inited: {0}")]
@@ -207,4 +207,46 @@ pub enum VariantError {
         /// Additional context of the Error
         message: String,
     },
+}
+
+/// Error for socks
+#[derive(Debug, Error)]
+#[non_exhaustive]
+pub enum SocksError {
+    /// Socks request has an unsupported command (CMD)
+    #[error("unsupported CMD: {0:?}")]
+    CommandNotSupported(Option<u8>),
+    /// Socks request has an unsupported address type (ATYP)
+    #[error("unsupported ATYP: {0:?}")]
+    AddrTypeNotSupported(Option<u8>),
+    /// Socks request has a non-zero RSV; reply with `0x01`.
+    #[error("RSV must be 0x00, got {0:?}")]
+    BadReserved(Option<u8>),
+    /// Connection Setting poisoned
+    #[error("Socks connection setting poisoned: {0}")]
+    PoisonedSetting(String),
+    /// Socks version unfound from the setting
+    #[error("Socks version unfound from the setting")]
+    SocksVerUnfound,
+    /// The socks version is not matching
+    #[error("Version does not match with before")]
+    SocksVerNoMatching,
+    /// There is not supported `auth_methods`
+    #[error("There is not supported auth_methods")]
+    NoSupportedAuthMethod,
+    /// Socks message has invalid format
+    #[error("Socks message has invalid format: {0}")]
+    InvalidFormMsg(String),
+    /// Unsupported socks version
+    #[error("unsupported socks version")]
+    UnsupportedVersion,
+    /// Variant Error
+    #[error("variant error")]
+    VariantError(#[from] VariantError),
+    /// Std io error
+    #[error("std io error: {0}")]
+    Io(#[from] std::io::Error),
+    /// Other Errors
+    #[error("Error: {0}")]
+    Other(#[from] anyhow::Error),
 }
