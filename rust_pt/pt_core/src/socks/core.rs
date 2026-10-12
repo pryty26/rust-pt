@@ -24,10 +24,10 @@ pub enum SocksVer {
 
 /// An socks connection and it's settings
 /// Please only call `builder()`, user must not set anything
-/// 
-/// 
+///
+///
 /// # Examples
-/// 
+///
 /// ```rust,no_run
 /// use pt_core::socks::core::SocksConn;
 /// use anyhow::Result;
@@ -40,9 +40,9 @@ pub enum SocksVer {
 ///     conn.handle_connect(&mut client).await?;
 ///     Ok(())
 /// }
-/// 
+///
 /// ```
-/// 
+///
 /// ```rust,no_run
 /// use pt_core::socks::core::SocksConn;
 /// use tokio::net::TcpStream;
@@ -62,7 +62,7 @@ pub enum SocksVer {
 ///     stream.write_all(b"GET / HTTP/1.0\r\n\r\n").await?;
 ///     Ok(())
 /// }
-/// 
+///
 /// ```
 #[derive(Deftly)]
 #[non_exhaustive]

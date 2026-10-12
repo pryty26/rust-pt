@@ -346,6 +346,35 @@ impl ClientRecvExtOrPortProtocol for ExtOrPort {
 }
 
 impl ExtOrPort {
+    /// send the traffic via `writer`
+    /// - src: The buffer that is going to send
+    ///
+    /// # Errors
+    ///
+    /// Returns [`ExtOrPortError::StreamMissing`] if no `writer` is available,
+    /// or an I/O error if the underlying stream fails.
+    pub async fn write_all(&mut self, src: &[u8]) -> Result<(), ExtOrPortError> {
+        let writer = self
+            .writer
+            .as_mut()
+            .ok_or_else(|| ExtOrPortError::StreamMissing)?;
+        writer.write_all(src).await?;
+        Ok(())
+    }
+    /// Read the traffic via `reader`
+    ///
+    /// # Errors
+    ///
+    /// Returns [`ExtOrPortError::StreamMissing`] if no reader is available,
+    /// or an I/O error if the underlying stream fails.
+    pub async fn read_exact(&mut self, buf: &mut [u8]) -> Result<(), ExtOrPortError> {
+        let reader = self
+            .reader
+            .as_mut()
+            .ok_or_else(|| ExtOrPortError::StreamMissing)?;
+        reader.read_exact(buf).await?;
+        Ok(())
+    }
     /// ```text
     /// Cookie-file format
     ///

@@ -55,7 +55,6 @@ use pt_config::configs::keys::PtTransportName;
 pub mod orport;
 /// Variables
 pub mod variables;
-#[cfg(feature = "extorport")]
 use crate::orport::extorport::ExtOrPort;
 use derive_deftly::Deftly;
 use pt_config::configs::keys::{ClientKey, CommonKey, ServerKey};
@@ -63,6 +62,7 @@ use pt_config::derive_deftly_template_Builder;
 use pt_config::prelude::*;
 use pt_err::PtError;
 use pt_tracing::prelude::*;
+use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::TcpStream;
 /// Init the Pt
 pub mod init;
@@ -70,9 +70,6 @@ pub mod init;
 pub mod socks;
 use std::collections::HashSet;
 
-/// A place holder
-#[cfg(not(feature = "extorport"))]
-pub(crate) struct ExtOrPort;
 /// To use all the traits
 pub mod prelude {
     pub use crate::Pt;
@@ -139,6 +136,80 @@ pub struct Pt {
 }
 
 impl Pt {
+    /// Reads exactly `buf.len()` bytes from the configured transport
+    /// (either `ExtOrPort` or `OrPort`) into `buf`.
+    ///
+    /// This is the `Pt`-level counterpart of
+    /// [`tokio::io::AsyncReadExt::read_exact`]. It fills `buf` completely
+    /// before returning. Exactly one of `extorport` or `orport` must be
+    /// set; this method does not choose between them if both are present.
+    ///
+    /// # Errors
+    ///
+    /// - [`PtError::PtConfigPoisoned`] — both `extorport` and `orport`
+    ///   are set. Exactly one transport may be active at a time.
+    /// - [`PtError::PtNotInitialized`] — neither transport is set. No
+    ///   transport is available to read data from.
+    /// - [`PtError::Io`] — the underlying stream failed, or reached EOF
+    ///   before `buf.len()` bytes could be read.
+    pub async fn read_exact(&mut self, buf: &mut [u8]) -> Result<(), PtError> {
+        match (&mut self.extorport, &mut self.orport) {
+            (Some(extorport), None) => {
+                extorport.read_exact(buf).await?;
+            },
+            (None, Some(orport)) => {
+                orport.read_exact(buf).await?;
+            },
+            (Some(_), Some(_)) => {
+                return Err(PtError::PtConfigPoisoned(
+                    "both orport and extorport are set".to_string(),
+                ));
+            },
+            (None, None) => {
+                return Err(PtError::PtNotInitialized(
+                    "no transport configured".to_string(),
+                ));
+            },
+        }
+        Ok(())
+    }
+
+    /// Sends the entire buffer `src` to the configured transport
+    /// (either `ExtOrPort` or `OrPort`).
+    ///
+    /// This is the `Pt`-level counterpart of
+    /// [`tokio::io::AsyncWriteExt::write_all`]. Exactly one of
+    /// `extorport` or `orport` must be set; this method does not choose
+    /// between them if both are present.
+    ///
+    /// # Errors
+    ///
+    /// - [`PtError::PtConfigPoisoned`] — both `extorport` and `orport`
+    ///   are set. Exactly one transport may be active at a time.
+    /// - [`PtError::PtNotInitialized`] — neither transport is set. No
+    ///   transport is available to send data through.
+    /// - [`PtError::Io`] — the underlying stream failed while writing.
+    pub async fn write_all(&mut self, src: &[u8]) -> Result<(), PtError> {
+        match (&mut self.extorport, &mut self.orport) {
+            (Some(extorport), None) => {
+                extorport.write_all(src).await?;
+            },
+            (None, Some(orport)) => {
+                orport.write_all(src).await?;
+            },
+            (Some(_), Some(_)) => {
+                return Err(PtError::PtConfigPoisoned(
+                    "both orport and extorport are set".to_string(),
+                ));
+            },
+            (None, None) => {
+                return Err(PtError::PtNotInitialized(
+                    "no transport configured".to_string(),
+                ));
+            },
+        }
+        Ok(())
+    }
     /// get the config
     /// # Errors
     /// if Pt is not initialized
@@ -246,7 +317,6 @@ impl Pt {
     }
 }
 
-#[cfg(feature = "extorport")]
 impl Pt {
     /// Split the `ExtOrPort` connection from the `Pt`
     pub fn split_extorport(&mut self) -> Option<ExtOrPort> {

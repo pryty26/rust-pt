@@ -4,10 +4,8 @@
 //======================================================================
 
 /// Implemention for extorport
-#[cfg(feature = "extorport")]
 pub mod extorport;
 /// Implemention of protocol
-#[cfg(feature = "extorport")]
 pub mod protocol;
 /// traits for orport
 pub mod traits;

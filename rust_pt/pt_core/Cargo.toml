@@ -30,5 +30,3 @@ subtle = { workspace = true }
 
 [features]
 default = []
-extorport = []
-full = ["extorport"]
