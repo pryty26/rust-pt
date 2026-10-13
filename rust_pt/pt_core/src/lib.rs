@@ -62,7 +62,6 @@ use pt_config::derive_deftly_template_Builder;
 use pt_config::prelude::*;
 use pt_err::PtError;
 use pt_tracing::prelude::*;
-use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::TcpStream;
 /// Init the Pt
 pub mod init;
@@ -111,16 +110,6 @@ pub struct Pt {
     /// User must call `try_init()` to get the Config Key
     #[deftly(default = "None")]
     pub(crate) config_key: Option<ConfigKey>,
-    /// Optional `ExtOrPort` connection
-    /// user must not call `with_extorport` to set that
-    /// please call `Pt.try_extorport()`
-    #[deftly(default = "None")]
-    pub(crate) extorport: Option<ExtOrPort>,
-    /// Optional `OrPort` connection,
-    /// there should not have a `OrPort` connection,
-    /// if there is already a `ExtOrPort` connection
-    #[deftly(default = "None")]
-    pub orport: Option<TcpStream>,
     /// A field used to automatically filter out unsupported transports
     /// Leaving for empty means skip
     #[deftly(default = "None")]
@@ -136,80 +125,6 @@ pub struct Pt {
 }
 
 impl Pt {
-    /// Reads exactly `buf.len()` bytes from the configured transport
-    /// (either `ExtOrPort` or `OrPort`) into `buf`.
-    ///
-    /// This is the `Pt`-level counterpart of
-    /// [`tokio::io::AsyncReadExt::read_exact`]. It fills `buf` completely
-    /// before returning. Exactly one of `extorport` or `orport` must be
-    /// set; this method does not choose between them if both are present.
-    ///
-    /// # Errors
-    ///
-    /// - [`PtError::PtConfigPoisoned`] — both `extorport` and `orport`
-    ///   are set. Exactly one transport may be active at a time.
-    /// - [`PtError::PtNotInitialized`] — neither transport is set. No
-    ///   transport is available to read data from.
-    /// - [`PtError::Io`] — the underlying stream failed, or reached EOF
-    ///   before `buf.len()` bytes could be read.
-    pub async fn read_exact(&mut self, buf: &mut [u8]) -> Result<(), PtError> {
-        match (&mut self.extorport, &mut self.orport) {
-            (Some(extorport), None) => {
-                extorport.read_exact(buf).await?;
-            },
-            (None, Some(orport)) => {
-                orport.read_exact(buf).await?;
-            },
-            (Some(_), Some(_)) => {
-                return Err(PtError::PtConfigPoisoned(
-                    "both orport and extorport are set".to_string(),
-                ));
-            },
-            (None, None) => {
-                return Err(PtError::PtNotInitialized(
-                    "no transport configured".to_string(),
-                ));
-            },
-        }
-        Ok(())
-    }
-
-    /// Sends the entire buffer `src` to the configured transport
-    /// (either `ExtOrPort` or `OrPort`).
-    ///
-    /// This is the `Pt`-level counterpart of
-    /// [`tokio::io::AsyncWriteExt::write_all`]. Exactly one of
-    /// `extorport` or `orport` must be set; this method does not choose
-    /// between them if both are present.
-    ///
-    /// # Errors
-    ///
-    /// - [`PtError::PtConfigPoisoned`] — both `extorport` and `orport`
-    ///   are set. Exactly one transport may be active at a time.
-    /// - [`PtError::PtNotInitialized`] — neither transport is set. No
-    ///   transport is available to send data through.
-    /// - [`PtError::Io`] — the underlying stream failed while writing.
-    pub async fn write_all(&mut self, src: &[u8]) -> Result<(), PtError> {
-        match (&mut self.extorport, &mut self.orport) {
-            (Some(extorport), None) => {
-                extorport.write_all(src).await?;
-            },
-            (None, Some(orport)) => {
-                orport.write_all(src).await?;
-            },
-            (Some(_), Some(_)) => {
-                return Err(PtError::PtConfigPoisoned(
-                    "both orport and extorport are set".to_string(),
-                ));
-            },
-            (None, None) => {
-                return Err(PtError::PtNotInitialized(
-                    "no transport configured".to_string(),
-                ));
-            },
-        }
-        Ok(())
-    }
     /// get the config
     /// # Errors
     /// if Pt is not initialized
@@ -307,29 +222,13 @@ impl Pt {
     pub fn get_common_config(&self) -> Result<&CommonKey, PtError> {
         Ok(self.get()?.common_key())
     }
-    /// Check if the connection is `ExtOrPort`
-    pub fn is_extorport(&self) -> bool {
-        self.extorport.is_some()
-    }
-    /// Check if the connection is `OrPort`
-    pub fn is_orport(&self) -> bool {
-        self.orport.is_some()
-    }
-}
-
-impl Pt {
-    /// Split the `ExtOrPort` connection from the `Pt`
-    pub fn split_extorport(&mut self) -> Option<ExtOrPort> {
-        self.extorport.take()
-    }
 }
 
 /// Which control connection was successfully established.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[allow(clippy::exhaustive_enums)] // Unless pt-spec changes, this will not change
 pub enum OrPortKind {
     /// Extended `ORPort` (the preferred path).
-    ExtOrPort,
+    ExtOrPort(ExtOrPort),
     /// Plain `ORPort` (fallback when `ExtOrPort` is unavailable).
-    OrPort,
+    OrPort(TcpStream),
 }

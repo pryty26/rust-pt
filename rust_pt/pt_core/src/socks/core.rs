@@ -448,7 +448,9 @@ impl SocksConn {
 
     /// Handle a CONNECT request end to end (RFC 1928 §4, §6).
     ///
-    /// We will run [`Self::parse_cmd`] in this function
+    /// We will run [`Self::server_handshake`] in this function
+    ///
+    /// After that, we will open a bidirectional data forwarding channel
     ///
     /// # Errors
     ///
@@ -493,7 +495,7 @@ impl SocksConn {
                 let local = upstream.local_addr()?;
                 self.reply(client, ReplyCode::Succeeded, local.ip(), local.port())
                     .await?;
-                relay(client, &mut upstream).await?;
+                tokio::io::copy_bidirectional(client, &mut upstream).await?;
             },
             Err(e) => {
                 let rep = ReplyCode::from_io_error(&e);
@@ -507,18 +509,6 @@ impl SocksConn {
     }
 }
 
-/// Bidirectionally relay bytes between the client and the upstream target.
-///
-/// After a successful CONNECT reply, the TCP connection carries
-/// raw application data with no further SOCKS framing.
-///
-/// # Errors
-///
-/// - Io error variant if either direction fails.
-pub async fn relay(client: &mut TcpStream, upstream: &mut TcpStream) -> Result<(), SocksError> {
-    tokio::io::copy_bidirectional(client, upstream).await?;
-    Ok(())
-}
 // Client implementation
 impl SocksConn {
     /// client authentication negotiation
@@ -584,7 +574,7 @@ impl SocksConn {
             Ok(IpAddr::V4(v4)) => {
                 self.addr_type = Some(AddrType::IpV4);
                 let mut req = Vec::with_capacity(1 + 1 + 1 + 1 + 4 + 2);
-                req.extend_from_slice(&[0x05, 0x01, 0x01, 0x01]);
+                req.extend_from_slice(&[0x05, 0x01, 0x00, 0x01]);
                 req.extend_from_slice(&v4.octets());
                 req
             },

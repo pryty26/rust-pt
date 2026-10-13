@@ -604,17 +604,32 @@ impl TryFrom<RawServerKey> for ServerKey {
             None => None,
         };
         // obfs3-198.51.100.1:1984,scramblesuit-127.0.0.1:4891
-        let TOR_PT_SERVER_BINDADDR: Vec<HashMap<PtTransportName, SocketAddr>> = raw
-            .TOR_PT_SERVER_BINDADDR
-            .split(',') // ["obfs3-198.51.100.1:1984", "scramblesuit-127.0.0.1:4891"]
-            .filter_map(|x| x.split_once('-')) // ["obfs3", "198.51.100.1:1984"]
-            .map(|(name, bind_addr)| {
-                let addr = bind_addr
+        let mut TOR_PT_SERVER_BINDADDR = HashMap::new();
+
+        for entry in raw.TOR_PT_SERVER_BINDADDR.split(',') {
+            let (name, bind_addr) =
+                entry
+                    .split_once('-')
+                    .ok_or_else(|| ConfigError::InvalidConfigErr {
+                        message: format!("Invalid TOR_PT_SERVER_BINDADDR entry: {entry}"),
+                    })?;
+
+            let addr =
+                bind_addr
                     .parse::<SocketAddr>()
-                    .expect("Invalid TOR_PT_SERVER_BINDADDR");
-                HashMap::from([(name.to_string(), addr)])
-            })
-            .collect();
+                    .map_err(|e| ConfigError::InvalidConfigErr {
+                        message: format!("Invalid socket addr in TOR_PT_SERVER_BINDADDR: {e}"),
+                    })?;
+
+            if TOR_PT_SERVER_BINDADDR
+                .insert(name.to_string(), addr)
+                .is_some()
+            {
+                return Err(ConfigError::InvalidConfigErr {
+                    message: format!("Duplicate transport name in TOR_PT_SERVER_BINDADDR: {name}"),
+                });
+            }
+        }
         // ---
         // Orport and Extorport checks
         if raw.TOR_PT_EXTENDED_SERVER_PORT.is_none() && raw.TOR_PT_ORPORT.is_none() {
@@ -674,7 +689,7 @@ pub struct ServerKey {
     /// on which it should listen for incoming client connections.
     ///Example:
     /// TOR_PT_SERVER_BINDADDR=obfs3-198.51.100.1:1984,scramblesuit-127.0.0.1:4891
-    pub TOR_PT_SERVER_BINDADDR: Vec<HashMap<PtTransportName, SocketAddr>>,
+    pub TOR_PT_SERVER_BINDADDR: HashMap<PtTransportName, SocketAddr>,
     /// Specifies the destination that
     /// the PT reverse proxy should forward traffic to after transforming it as appropriate,
     ///  as an <address>:<port>.

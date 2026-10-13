@@ -346,6 +346,19 @@ impl ClientRecvExtOrPortProtocol for ExtOrPort {
 }
 
 impl ExtOrPort {
+    /// Merge `reader` and `writer` back into a single `TcpStream`.
+    ///
+    /// # Errors
+    /// - `StreamMissing`: `reader` or `writer` is `None`.
+    /// - `Other`: the two halves do not come from the same `TcpStream`.
+    pub fn reunite(&mut self) -> Result<TcpStream, ExtOrPortError> {
+        let reader = self.reader.take().ok_or(ExtOrPortError::StreamMissing)?;
+        let writer = self.writer.take().ok_or(ExtOrPortError::StreamMissing)?;
+
+        reader
+            .reunite(writer)
+            .map_err(|e| ExtOrPortError::Other(anyhow!(e)))
+    }
     /// send the traffic via `writer`
     /// - src: The buffer that is going to send
     ///

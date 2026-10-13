@@ -53,12 +53,14 @@
 
 #![allow(clippy::print_stdout)]
 use std::net::SocketAddr;
+use tokio::io::copy_bidirectional;
 use tokio::net::TcpListener;
 // this is an example, so code quality doesn't matter
 use pt_config::configs::{
     core::ConfigKey,
     keys::{ClientKey, CommonKey, ServerKey},
 };
+use pt_core::socks::core::SocksConn;
 use pt_core::{OrPortKind, prelude::*};
 use pt_err::PtError;
 use std::collections::HashSet;
@@ -84,19 +86,24 @@ async fn main() -> anyhow::Result<()> {
         let server_transports = server_config.TOR_PT_SERVER_TRANSPORTS.clone();
         for _ in &server_transports {
             let addr = "127.0.0.1:2837".parse::<SocketAddr>()?;
-            super_cool_launch(addr).await?;
+            let listener = super_cool_launch(addr).await?;
             // ( PTs should launch their PT here, and check whether they supports that transport)
             PtTracing::smethod("cool_transport", &addr.to_string(), None);
-            match pt.connect_or().await? {
-                OrPortKind::ExtOrPort => {
+            let (mut stream, _addr) = listener.accept().await?;
+            let mut orport_connection = match pt.connect_or().await? {
+                OrPortKind::ExtOrPort(mut extorport) => {
                     // Finish Sends the full `ExtOrPort` handshake for a new client connection:
                     // `TRANSPORT` → `USERADDR` → `DONE`/`OKAY`.
-                    pt.finish("cool_transport".to_string(), addr.to_string())
+                    extorport
+                        .finish("cool_transport".to_string(), addr.to_string())
                         .await?;
+                    extorport.reunite()?
                 },
-                OrPortKind::OrPort => {},
-            }
+                OrPortKind::OrPort(orport) => orport,
+            };
+            copy_bidirectional(&mut orport_connection, &mut stream).await?;
         }
+        return Ok(());
     }
     // I know I can just use `else`
     // But this is for showing that `is_client()` is also supported
@@ -134,6 +141,29 @@ async fn main() -> anyhow::Result<()> {
 
         // Or you can `clone()` them
         let _client_config_clone: ClientKey = pt.get_client_config()?.clone();
+        // We have to launch a socks port, and the Tor will use it
+        let listener = TcpListener::bind("127.0.0.1:9050").await?;
+        tokio::spawn(async move {
+            let _: anyhow::Result<_> = async {
+                loop {
+                    let (mut client, _) = listener.accept().await?;
+
+                    tokio::spawn(async move {
+                        let _: anyhow::Result<_> = async {
+                            let mut socks = SocksConn::builder();
+
+                            socks.handle_connect(&mut client).await?;
+                            #[allow(unreachable_code)]
+                            Ok(())
+                        }
+                        .await;
+                    });
+                }
+                #[allow(unreachable_code)]
+                Ok(())
+            }
+            .await;
+        });
     }
     Ok(())
 }

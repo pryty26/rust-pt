@@ -54,6 +54,12 @@ pub trait ClientExtOrPortProtocol {
     ///      [0x0002] TRANSPORT: a string of the name of the pluggable
     ///        transport currently in effect on the connection.
     async fn transport(writer: &mut OwnedWriteHalf, pt_name: String) -> Result<(), ExtOrPortError>;
+    /// A function that does everything
+    /// this function should call
+    /// `user_addr`
+    /// `transport`
+    /// `done`
+    async fn finish(&mut self, pt_name: String, client_addr: String) -> Result<(), ExtOrPortError>;
 }
 
 /// ```text

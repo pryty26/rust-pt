@@ -79,4 +79,14 @@ impl ClientExtOrPortProtocol for ExtOrPort {
         writer.write_all(pt_name.as_bytes()).await?;
         Ok(())
     }
+    async fn finish(&mut self, pt_name: String, client_addr: String) -> Result<(), ExtOrPortError> {
+        let writer = self
+            .writer
+            .as_mut()
+            .ok_or_else(|| ExtOrPortError::StreamMissing)?;
+        Self::transport(writer, pt_name).await?;
+        Self::user_addr(writer, client_addr).await?;
+        self.done_wait().await?;
+        Ok(())
+    }
 }

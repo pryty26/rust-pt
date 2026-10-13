@@ -30,3 +30,4 @@ subtle = { workspace = true }
 
 [features]
 default = []
+full = []

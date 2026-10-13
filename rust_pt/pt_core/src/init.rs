@@ -3,10 +3,8 @@
 // Filename: init.rs
 //======================================================================
 use crate::orport::extorport::ExtOrPort;
-use crate::orport::traits::ClientExtOrPortProtocol;
 use crate::{OrPortKind, Pt};
 use anyhow::Result;
-use pt_config::configs::keys::PtTransportName;
 use pt_config::prelude::*;
 use pt_err::PtError;
 use pt_tracing::prelude::*;
@@ -163,25 +161,22 @@ impl Pt {
     ///
     /// # Errors
     /// if Pt is not initialized
-    pub async fn try_extorport(&mut self) -> Result<(), PtError> {
+    pub async fn try_extorport(&mut self) -> Result<ExtOrPort, PtError> {
         let server_key = self.get_server_config()?;
         if let Some(ext_addr) = server_key.TOR_PT_EXTENDED_SERVER_PORT
             && let Some(ext_cookie_file) = server_key.TOR_PT_AUTH_COOKIE_FILE.clone()
         {
             // Handling `ExtOrPort`
-            self.extorport = {
-                let mut ext_orport: ExtOrPort = ExtOrPort::builder()
-                    .with_addr(ext_addr)
-                    .with_auth_cookie_file(ext_cookie_file);
-                ext_orport.connect().await?;
-                Some(ext_orport)
-            };
-        } else {
-            return Err(PtError::ExtOrPortNotAvailable(
-                "invalid or empty Config".to_string(),
-            ));
+            let mut ext_orport: ExtOrPort = ExtOrPort::builder()
+                .with_addr(ext_addr)
+                .with_auth_cookie_file(ext_cookie_file);
+            ext_orport.connect().await?;
+            return Ok(ext_orport);
         }
-        Ok(())
+
+        Err(PtError::ExtOrPortNotAvailable(
+            "invalid or empty Config".to_string(),
+        ))
     }
 
     /// Connect to the `ExtOrPort`
@@ -196,12 +191,11 @@ impl Pt {
             return Err(PtError::ClientOrPortUnavailable);
         }
         match self.try_extorport().await {
-            Ok(()) => Ok(OrPortKind::ExtOrPort),
+            Ok(extorport) => Ok(OrPortKind::ExtOrPort(extorport)),
             Err(PtError::ExtOrPortNotAvailable(_)) => {
                 // Try to connect to the OrPort
                 if let Some(addr) = self.get_server_config()?.TOR_PT_ORPORT {
-                    self.orport = Some(TcpStream::connect(addr).await?);
-                    return Ok(OrPortKind::OrPort);
+                    return Ok(OrPortKind::OrPort(TcpStream::connect(addr).await?));
                 }
                 PtTracing::error("Config poisoned, OrPort and ExtOrPort both unavailable")?;
                 Err(PtError::PtConfigPoisoned(
@@ -210,117 +204,5 @@ impl Pt {
             },
             Err(e) => Err(e),
         }
-    }
-}
-impl Pt {
-    /// As of September 2026, the pt-spec does not state when the server
-    /// should return `OKAY` or `DENY`.
-    /// But in C-tor and goptlib, code shows that server will return `Okay` after sending `done`
-    /// Therefore, this function is here
-    ///
-    /// # Errors
-    /// - if tokio `write_all(...)` returns Error
-    /// - if the stream is missing
-    /// - [`ExtOrPortError::StreamMissing`] if the reader half is not set,
-    ///   i.e. `connect()` has not completed successfully.
-    /// - Any error returned by `PtTracing::info`, typically when
-    ///   `PT_TRACING` is unset.
-    /// - [`ExtOrPortError::Other`] if reading from the server fails,
-    ///   including `UnexpectedEof` when the server closes the connection
-    ///   mid-frame.
-    /// - [`ExtOrPortError::Other`] if the command or length bytes cannot be
-    ///   converted to `u16` / `ExtOrPortReply`.
-    /// - the connection is never inited
-    /// - the connection is not `ExtOrPort`
-    pub async fn done_wait(&mut self) -> Result<(), PtError> {
-        if let Some(extorport) = &mut self.extorport {
-            ExtOrPort::done_wait(extorport).await?;
-        } else {
-            return Err(PtError::NotExtOrPort(
-                "calling done requires an established ExtOrPort connection".to_string(),
-            ));
-        }
-        Ok(())
-    }
-
-    /// Sends a `USERADDR` command to the `ExtOrPort` server, informing it of the
-    /// TCP/IP address of the client connecting through the pluggable transport.
-    ///
-    /// The address MUST be in one of the following formats:
-    ///   - `1.2.3.4:5678`
-    ///   - `[1:2::3:4]:5678`
-    ///
-    /// Other formats MAY be accepted by current Tor versions, but transports
-    /// MUST NOT send them.
-    ///
-    /// # Note
-    /// User have to make sure the `addr` is valid
-    /// # Errors
-    /// - if tokio `write_all(...)` returns an Error.
-    /// - [`PtError::NotExtOrPort`] if no `ExtOrPort` connection has been
-    ///   established, i.e. the `extorport` field is `None`.
-    /// - Any error returned by [`ExtOrPort::user_addr`], including
-    ///   [`ExtOrPortError::InvalidUserAddr`] if the address fails to parse.
-    pub async fn user_addr(&mut self, client_addr: String) -> Result<(), PtError> {
-        if let Some(extorport) = &mut self.extorport
-            && let Some(writer) = &mut extorport.writer
-        {
-            ExtOrPort::user_addr(writer, client_addr).await?;
-        } else {
-            return Err(PtError::NotExtOrPort(
-                "calling user_addr requires an established ExtOrPort connection".to_string(),
-            ));
-        }
-        Ok(())
-    }
-
-    /// Sends a `TRANSPORT` command to the `ExtOrPort` server, informing it of the
-    /// name of the pluggable transport in use.
-    ///
-    /// # Errors
-    /// - if tokio `write_all(...)` returns an Error.
-    /// - [`PtError::NotExtOrPort`] if no `ExtOrPort` connection has been
-    ///   established, i.e. the `extorport` field is `None`.
-    /// - Any error returned by [`ExtOrPort::transport`], including
-    ///   [`ExtOrPortError::PtNameTooLong`] if the transport name exceeds
-    ///   `u16::MAX` bytes.
-    pub async fn transport(&mut self, pt_name: PtTransportName) -> Result<(), PtError> {
-        if let Some(extorport) = &mut self.extorport
-            && let Some(writer) = &mut extorport.writer
-        {
-            ExtOrPort::transport(writer, pt_name).await?;
-        } else {
-            return Err(PtError::NotExtOrPort(
-                "calling transport requires an established ExtOrPort connection".to_string(),
-            ));
-        }
-        Ok(())
-    }
-    /// Sends the full `ExtOrPort` handshake for a new client connection:
-    /// `TRANSPORT` → `USERADDR` → `DONE`/`OKAY`.
-    ///
-    /// This is the convenience wrapper most callers should use instead of
-    /// calling [`Pt::transport`], [`Pt::user_addr`], and [`Pt::done_wait`]
-    /// individually.
-    ///
-    /// # Errors
-    /// - [`PtError::NotExtOrPort`] if no `ExtOrPort` connection has been
-    ///   established.
-    /// - Any error returned by [`Pt::transport`], including
-    ///   [`ExtOrPortError::PtNameTooLong`] if `pt_name` exceeds `u16::MAX` bytes.
-    /// - Any error returned by [`Pt::user_addr`], including
-    ///   [`ExtOrPortError::InvalidUserAddr`] if `client_addr` fails to parse.
-    /// - Any error returned by [`Pt::done_wait`], including
-    ///   [`ExtOrPortError::StreamMissing`] if the reader half is not set, or
-    ///   [`ExtOrPortError::Other`] on an I/O failure while awaiting `OKAY`.
-    pub async fn finish(
-        &mut self,
-        pt_name: PtTransportName,
-        client_addr: String,
-    ) -> Result<(), PtError> {
-        self.transport(pt_name).await?;
-        self.user_addr(client_addr).await?;
-        self.done_wait().await?;
-        Ok(())
     }
 }

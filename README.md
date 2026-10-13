@@ -15,6 +15,14 @@ Before reading this project, you may like to read the pt.spec of the Tor [https:
 [https://github.com/pryty26/rust-pt]
 [https://rust-pt.us.ci]
 [mail@rust-pt.us.ci]
+
+## Milestones
+
+1. **2026-10-17** — Planned release of `rust-pt 0.0.0-beta.*`
+2. **2026-11-17** — Planned release of `rust-pt 0.0.1`
+
+# 2026.11.17 (YY.MM.DD)
+
 ### Contributors and acknowledgment
 
 ## quick start
