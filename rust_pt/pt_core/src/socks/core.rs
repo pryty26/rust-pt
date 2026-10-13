@@ -1,3 +1,8 @@
+// File: rust_pt\pt_core\src\socks\core.rs
+// Directory: rust_pt\pt_core\src\socks
+// Filename: core.rs
+//======================================================================
+
 //! RFC 1928 (https://www.rfc-editor.org/info/rfc1928/)
 use crate::variables::NO_ACCEPTABLE_METHODS;
 use derive_deftly::Deftly;
