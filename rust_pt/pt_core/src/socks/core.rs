@@ -2,7 +2,8 @@
 // Directory: rust_pt\pt_core\src\socks
 // Filename: core.rs
 //======================================================================
-
+//! `pt_core` is a crate that belongs to `rust-pt`
+//! `rust-pt` is a Rust-based framework for Tor Pluggable Transports, designed for Rust developers.
 //! RFC 1928 (https://www.rfc-editor.org/info/rfc1928/)
 use crate::variables::NO_ACCEPTABLE_METHODS;
 use derive_deftly::Deftly;

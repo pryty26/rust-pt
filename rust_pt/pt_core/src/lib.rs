@@ -2,7 +2,8 @@
 // Directory: rust_pt\pt_core\src
 // Filename: lib.rs
 //======================================================================
-#![doc = include_str!("../../../README.md")]
+//! `pt_core` is a crate that belongs to `rust-pt`
+//! `rust-pt` is a Rust-based framework for Tor Pluggable Transports, designed for Rust developers.
 // @@ begin lint list
 #![allow(renamed_and_removed_lints)] // @@REMOVE_WHEN(ci_arti_stable)
 #![allow(unknown_lints)] // @@REMOVE_WHEN(ci_arti_nightly)

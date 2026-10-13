@@ -2,7 +2,8 @@
 // Directory: rust_pt\pt_err\src
 // Filename: macros.rs
 //======================================================================
-
+//! `pt_err` is a crate that belongs to `rust-pt`
+//! `rust-pt` is a Rust-based framework for Tor Pluggable Transports, designed for Rust developers.
 use derive_deftly::define_derive_deftly;
 define_derive_deftly! {
     /// Implement From for $`ttype::Other`(...)
