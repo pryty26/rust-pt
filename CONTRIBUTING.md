@@ -88,6 +88,8 @@ if a.gt(&b) {}
   - use constant-time comparison if needed
   - assume there is an attacker on the intranet with low-privilige
 
+9. Remember to ensure that the documentation for the function is still valid after your changes.
+
 ## Where are some good places to start hacking?
 
 You might want to begin by looking around the

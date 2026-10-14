@@ -13,7 +13,7 @@ use pt_config::{
 };
 use pt_err::SocksError;
 use std::io::ErrorKind;
-use std::net::{IpAddr, Ipv4Addr};
+use std::net::{IpAddr, Ipv4Addr, Ipv6Addr};
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::TcpStream;
 
@@ -80,18 +80,12 @@ pub struct SocksConn {
     /// selected auth type
     #[deftly(default = "None")]
     pub auth_type: Option<AuthMethods>,
-    /// The ip address that user called to either bind or connect
+    /// The address that user called to either bind or connect
     #[deftly(default = "None")]
-    pub ip: Option<IpAddr>,
+    pub addr: Option<HostAddr>,
     /// The command that user asked us to do
     #[deftly(default = "None")]
     pub command: Option<SocksCommand>,
-    /// Address type of the target (IPv4 / IPv6 / domain)
-    #[deftly(default = "None")]
-    pub addr_type: Option<AddrType>,
-    /// Target domain name, set when `addr_type` is [`AddrType::Domain`]
-    #[deftly(default = "None")]
-    pub domain: Option<String>,
     /// Target port, big-endian on the wire
     #[deftly(default = "None")]
     pub port: Option<u16>,
@@ -104,11 +98,33 @@ pub struct SocksConn {
 #[derive_deftly(FromDiscriminant, IntoU8)]
 pub enum AddrType {
     /// IPv4 address
-    IpV4 = 0x01,
+    Ipv4 = 0x01,
     /// Domain name
     Domain = 0x03,
     /// IPv6 address
-    IpV6 = 0x04,
+    Ipv6 = 0x04,
+}
+
+/// Different address type
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[allow(clippy::exhaustive_enums)]
+pub enum HostAddr {
+    /// IPv4 address
+    Ipv4(Ipv4Addr),
+    /// Domain name
+    Domain(String),
+    /// IPv6 address
+    Ipv6(Ipv6Addr),
+}
+
+impl From<&HostAddr> for AddrType {
+    fn from(h: &HostAddr) -> Self {
+        match h {
+            HostAddr::Ipv4(_) => AddrType::Ipv4,
+            HostAddr::Domain(_) => AddrType::Domain,
+            HostAddr::Ipv6(_) => AddrType::Ipv6,
+        }
+    }
 }
 
 /// The supported authentication methods
@@ -321,7 +337,7 @@ impl SocksConn {
     ///
     /// Reads `VER, CMD, RSV, ATYP`, then the address (and port) according
     /// to `ATYP`, and stores the result into [`Self::command`],
-    /// [`Self::addr_type`], [`Self::ip`] / [`Self::domain`], and [`Self::port`].
+    /// [`Self::addr`], and [`Self::port`].
     ///
     /// # Errors
     ///
@@ -369,15 +385,15 @@ impl SocksConn {
             .map_err(|_| SocksError::AddrTypeNotSupported(Some(header_buf[3])))?;
 
         match addr_type {
-            AddrType::IpV4 => {
+            AddrType::Ipv4 => {
                 let mut buf = [0_u8; 4];
                 stream.read_exact(&mut buf).await?;
-                self.ip = Some(IpAddr::from(buf));
+                self.addr = Some(HostAddr::Ipv4(Ipv4Addr::from(buf)));
             },
-            AddrType::IpV6 => {
+            AddrType::Ipv6 => {
                 let mut buf = [0_u8; 16];
                 stream.read_exact(&mut buf).await?;
-                self.ip = Some(IpAddr::from(buf));
+                self.addr = Some(HostAddr::Ipv6(Ipv6Addr::from(buf)));
             },
             AddrType::Domain => {
                 let mut len_buf = [0_u8; 1];
@@ -391,7 +407,7 @@ impl SocksConn {
                 let domain = String::from_utf8(name_buf).map_err(|e| {
                     SocksError::InvalidFormMsg(format!("domain is not valid UTF-8: {e}"))
                 })?;
-                self.domain = Some(domain);
+                self.addr = Some(HostAddr::Domain(domain));
             },
         }
 
@@ -399,7 +415,6 @@ impl SocksConn {
         stream.read_exact(&mut port_buf).await?;
 
         self.command = Some(command);
-        self.addr_type = Some(addr_type);
         self.port = Some(u16::from_be_bytes(port_buf));
 
         Ok(())
@@ -436,8 +451,8 @@ impl SocksConn {
         bnd_port: u16,
     ) -> Result<(), SocksError> {
         let (atyp, addr_bytes): (AddrType, Vec<u8>) = match bnd_addr {
-            IpAddr::V4(v4) => (AddrType::IpV4, v4.octets().to_vec()),
-            IpAddr::V6(v6) => (AddrType::IpV6, v6.octets().to_vec()),
+            IpAddr::V4(v4) => (AddrType::Ipv4, v4.octets().to_vec()),
+            IpAddr::V6(v6) => (AddrType::Ipv6, v6.octets().to_vec()),
         };
 
         let mut buf = Vec::with_capacity(4 + addr_bytes.len() + 2);
@@ -452,18 +467,22 @@ impl SocksConn {
         Ok(())
     }
 
-    /// Handle a CONNECT request end to end (RFC 1928 §4, §6).
+    /// Handle a CONNECT request handshake
     ///
     /// We will run [`Self::server_handshake`] in this function
     ///
-    /// After that, we will open a bidirectional data forwarding channel
+    /// Also, remember that the user should open a bidirectional forwarding after calling is function
+    ///
     ///
     /// # Errors
     ///
-    /// - [`SocksError::InvalidFormMsg`] if the target address is missing.
-    /// - I/O error variant if dialing upstream or writing the reply fails.
-    /// - Whatever [`relay`] returns.
-    pub async fn handle_connect(&mut self, client: &mut TcpStream) -> Result<(), SocksError> {
+    /// - [`SocksError::PoisonedSetting`] if the target address or port is missing.
+    ///   (Should be impossible, because we just called [`Self::server_handshake`])
+    /// - I/O error variant if writing the reply fails.
+    pub async fn handle_connect(
+        &mut self,
+        client: &mut TcpStream,
+    ) -> Result<(HostAddr, u16), SocksError> {
         if let Err(e) = self.server_handshake(client).await {
             if let Some(rep) = ReplyCode::for_error(&e) {
                 self.reply(client, rep, IpAddr::V4(Ipv4Addr::UNSPECIFIED), 0)
@@ -475,43 +494,12 @@ impl SocksConn {
             .port
             .ok_or_else(|| SocksError::PoisonedSetting("missing DST.PORT".into()))?;
 
-        let target: (String, u16) = match self.addr_type {
-            Some(AddrType::IpV4 | AddrType::IpV6) => {
-                let ip = self
-                    .ip
-                    .ok_or_else(|| SocksError::PoisonedSetting("missing DST.ADDR".into()))?;
-                (ip.to_string(), port)
-            },
-            Some(AddrType::Domain) => {
-                let d = self
-                    .domain
-                    .as_ref()
-                    .ok_or_else(|| SocksError::PoisonedSetting("missing DST.ADDR".into()))?;
-                (d.clone(), port)
-            },
-            None => return Err(SocksError::PoisonedSetting("missing ATYP".into())),
-        };
-        // Note:
-        // `connect<A: ToSocketAddrs>(addr: A)`
-        // `addr` is an address of the remote host.
-        // Anything which implements the
-        // [`ToSocketAddrs`] trait can be supplied as the address.
-        match TcpStream::connect((target.0.as_str(), target.1)).await {
-            Ok(mut upstream) => {
-                let local = upstream.local_addr()?;
-                self.reply(client, ReplyCode::Succeeded, local.ip(), local.port())
-                    .await?;
-                tokio::io::copy_bidirectional(client, &mut upstream).await?;
-            },
-            Err(e) => {
-                let rep = ReplyCode::from_io_error(&e);
-                self.reply(client, rep, IpAddr::V4(Ipv4Addr::UNSPECIFIED), 0)
-                    .await?;
-                return Err(e.into());
-            },
-        }
+        let target: HostAddr = self
+            .addr
+            .clone()
+            .ok_or_else(|| SocksError::PoisonedSetting("missing ADDR".into()))?;
 
-        Ok(())
+        Ok((target, port))
     }
 }
 
@@ -522,7 +510,7 @@ impl SocksConn {
     /// # Errors
     ///
     /// - `InvalidFormMsg` — server replied with a version other than `0x05`.
-    /// - `UnsupportedVersion` — server selected a method not in `SUPPORTED_AUTH_METHODS`.
+    /// - `NoSupportedAuthMethod` — server selected a method not in `SUPPORTED_AUTH_METHODS`.
     /// - I/O error variant — read/write failed
     /// # Panics
     /// if the [`SUPPORTED_AUTH_METHODS`] len is bigger than 255,
@@ -578,21 +566,21 @@ impl SocksConn {
     ) -> Result<(String, u16), SocksError> {
         let mut msg = match addr.parse::<IpAddr>() {
             Ok(IpAddr::V4(v4)) => {
-                self.addr_type = Some(AddrType::IpV4);
+                self.addr = Some(HostAddr::Ipv4(v4));
                 let mut req = Vec::with_capacity(1 + 1 + 1 + 1 + 4 + 2);
                 req.extend_from_slice(&[0x05, 0x01, 0x00, 0x01]);
                 req.extend_from_slice(&v4.octets());
                 req
             },
             Ok(IpAddr::V6(v6)) => {
-                self.addr_type = Some(AddrType::IpV6);
+                self.addr = Some(HostAddr::Ipv6(v6));
                 let mut req = Vec::with_capacity(1 + 1 + 1 + 1 + 16 + 2);
                 req.extend_from_slice(&[0x05, 0x01, 0x00, 0x04]);
                 req.extend_from_slice(&v6.octets());
                 req
             },
             Err(_) => {
-                self.addr_type = Some(AddrType::Domain);
+                self.addr = Some(HostAddr::Domain(addr.clone()));
                 let mut req = Vec::with_capacity(1 + 1 + 1 + 1 + 1 + addr.len() + 2);
                 req.extend_from_slice(&[0x05, 0x01, 0x00, 0x03]);
                 req.push(
@@ -632,12 +620,12 @@ impl SocksConn {
                     SocksError::InvalidFormMsg(format!("domain is not valid UTF-8: {e}"))
                 })?
             },
-            AddrType::IpV4 => {
+            AddrType::Ipv4 => {
                 let mut buf = [0_u8; 4];
                 stream.read_exact(&mut buf).await?;
                 IpAddr::from(buf).to_string()
             },
-            AddrType::IpV6 => {
+            AddrType::Ipv6 => {
                 let mut buf = [0_u8; 16];
                 stream.read_exact(&mut buf).await?;
                 IpAddr::from(buf).to_string()

@@ -150,9 +150,9 @@ async fn main() -> anyhow::Result<()> {
 
                     tokio::spawn(async move {
                         let _: anyhow::Result<_> = async {
-                            let mut socks = SocksConn::builder();
+                            let mut socks_mgr = SocksConn::builder();
 
-                            socks.handle_connect(&mut client).await?;
+                            socks_mgr.handle_connect(&mut client).await?;
                             #[allow(unreachable_code)]
                             Ok(())
                         }
