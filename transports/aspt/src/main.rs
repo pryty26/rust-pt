@@ -51,10 +51,13 @@
 #![deny(clippy::pedantic)] // This is not in Arti
 //! <!-- @@ end lint list
 
+//! Welcome to the official example of rust-pt!
+//! ヾ(•ω•`)o
+
 #![allow(clippy::print_stdout)]
 use std::net::SocketAddr;
-use tokio::io::copy_bidirectional;
 use tokio::net::TcpListener;
+use tokio::{io::copy_bidirectional, net::TcpStream};
 // this is an example, so code quality doesn't matter
 use pt_config::configs::{
     core::ConfigKey,
@@ -113,6 +116,7 @@ async fn main() -> anyhow::Result<()> {
         // ( I have wrote a lot of docs so you can read them )
         let client_config: &ClientKey = pt.get_client_config()?;
         let _common_config: &CommonKey = pt.get_common_config()?;
+
         // they may return Errors that are defined in the pt_err
         // # Errors
         // Returns an error
@@ -150,9 +154,15 @@ async fn main() -> anyhow::Result<()> {
 
                     tokio::spawn(async move {
                         let _: anyhow::Result<_> = async {
-                            let mut socks_mgr = SocksConn::builder();
+                            let mut server_socks_mgr: SocksConn = SocksConn::builder();
 
-                            socks_mgr.handle_connect(&mut client).await?;
+                            server_socks_mgr.handle_connect(&mut client).await?;
+
+                            // Yep, if you uses `String::try_from()`
+                            // You will get the address that is indicated by socks client
+                            let addr: String = String::try_from(&server_socks_mgr)?;
+                            let mut upstream = TcpStream::connect(addr).await?;
+                            copy_bidirectional(&mut client, &mut upstream).await?;
                             #[allow(unreachable_code)]
                             Ok(())
                         }

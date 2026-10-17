@@ -214,6 +214,10 @@ pub enum VariantError {
 #[derive(Debug, Error)]
 #[non_exhaustive]
 pub enum SocksError {
+    /// Socks connection is not connect.
+    /// Therefore some settings are unfound
+    #[error("Socks connection is not established. Therefore some settings are unfound: {0}")]
+    SocksConnNotInitialized(String),
     /// Socks request has an unsupported command (CMD)
     #[error("unsupported CMD: {0:?}")]
     CommandNotSupported(Option<u8>),

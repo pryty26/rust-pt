@@ -409,7 +409,7 @@ impl ExtOrPort {
     /// e.g, Invalid length,
     /// or `static_cookie` is not equal to "! Extended `ORPort` Auth Cookie !\x0a"
     pub async fn auth_cookie(&self) -> Result<CookieString, ExtOrPortError> {
-        let contents = fs::read(self.auth_cookie_file.clone()).await?;
+        let contents = fs::read(&self.auth_cookie_file).await?;
 
         let static_cookie: [u8; 32] = contents
             .get(0..32)

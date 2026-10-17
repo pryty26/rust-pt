@@ -12,8 +12,10 @@ use pt_config::{
     derive_deftly_template_IntoU8,
 };
 use pt_err::SocksError;
+use std::io;
 use std::io::ErrorKind;
 use std::net::{IpAddr, Ipv4Addr, Ipv6Addr};
+use std::net::{SocketAddr, ToSocketAddrs};
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::TcpStream;
 
@@ -115,6 +117,16 @@ pub enum HostAddr {
     Domain(String),
     /// IPv6 address
     Ipv6(Ipv6Addr),
+}
+
+impl From<HostAddr> for String {
+    fn from(addr: HostAddr) -> Self {
+        match addr {
+            HostAddr::Ipv4(x) => x.to_string(),
+            HostAddr::Ipv6(x) => x.to_string(),
+            HostAddr::Domain(x) => x,
+        }
+    }
 }
 
 impl From<&HostAddr> for AddrType {
@@ -263,6 +275,58 @@ impl ReplyCode {
             Self::CommandNotSupported => Some(SocksError::CommandNotSupported(None)),
             Self::AddrTypeNotSupported => Some(SocksError::AddrTypeNotSupported(None)),
         }
+    }
+}
+
+impl TryFrom<&SocksConn> for String {
+    type Error = pt_err::SocksError;
+    /// Calling this function,
+    /// you would get the address that is indicated by the socks client during the handshake
+    /// # Note:
+    /// Remember use
+    /// `(&socks).try_into()?`
+    /// because rust will not automatically use reference
+    fn try_from(socks: &SocksConn) -> Result<Self, Self::Error> {
+        let addr = socks
+            .addr
+            .as_ref()
+            .ok_or_else(|| SocksError::SocksConnNotInitialized("address missing".to_string()))?;
+
+        let port = socks
+            .port
+            .as_ref()
+            .ok_or_else(|| SocksError::SocksConnNotInitialized("port missing".to_string()))?;
+        match addr {
+            HostAddr::Ipv4(v) => Ok(format!("{v}:{port}")),
+            HostAddr::Ipv6(v) => Ok(format!("[{v}]:{port}")),
+            HostAddr::Domain(v) => Ok(format!("{v}:{port}")),
+        }
+    }
+}
+impl ToSocketAddrs for SocksConn {
+    type Iter = std::vec::IntoIter<SocketAddr>;
+
+    fn to_socket_addrs(&self) -> io::Result<Self::Iter> {
+        let addr = self
+            .addr
+            .as_ref()
+            .ok_or_else(|| io::Error::from(io::ErrorKind::NotFound))?;
+
+        let port = self
+            .port
+            .ok_or_else(|| io::Error::from(io::ErrorKind::NotFound))?;
+
+        let addrs: Vec<SocketAddr> = match addr {
+            HostAddr::Ipv4(v) => {
+                vec![SocketAddr::new((*v).into(), port)]
+            },
+            HostAddr::Ipv6(v) => {
+                vec![SocketAddr::new((*v).into(), port)]
+            },
+            HostAddr::Domain(v) => (v.as_str(), port).to_socket_addrs()?.collect(),
+        };
+
+        Ok(addrs.into_iter())
     }
 }
 
