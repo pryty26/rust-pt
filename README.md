@@ -97,7 +97,7 @@ and to seek, receive and impart information and ideas through any media and rega
 
 
 ## License
-Licensed under the Apache License, Version 2.0 (the "License");
+SPDX-License-Identifier: MIT OR Apache-2.0 OR AGPL-3.0-or-later
 
 ## Project status
 Developing!
