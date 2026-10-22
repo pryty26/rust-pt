@@ -58,12 +58,21 @@ pub mod configs;
 /// Diffrent macros which could be helpful
 pub mod macros;
 use dotenvy::dotenv;
+use pt_tracing::prelude::*;
 /// variables
 pub mod variable;
 /// Init the .env
-pub(crate) static ENV_LOADED: std::sync::LazyLock<()> = std::sync::LazyLock::new(|| {
-    let _ = dotenv().ok();
-});
+pub(crate) static ENV_LOADED: std::sync::LazyLock<()> =
+    std::sync::LazyLock::new(|| match dotenv() {
+        Ok(path) => {
+            let p = path.display().to_string().replace('\\', "/");
+            PtTracing::info(&format!("[config] loaded .env from {p}"))
+                .expect("Log not initialized");
+        },
+        Err(e) => {
+            PtTracing::info(&format!("Error from `ENV_LOADED`: {e}")).expect("Log not initialized");
+        },
+    });
 /// A prelude module that could be useful
 pub mod prelude {
     pub use crate::configs::core::ConfigKey;

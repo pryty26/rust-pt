@@ -178,7 +178,6 @@ impl PtTracing {
     pub fn try_init(self) -> Result<()> {
         tracing_subscriber::fmt()
             .with_max_level(self.severity)
-            .compact()
             .with_level(false)
             .with_target(false)
             .with_thread_ids(false)
@@ -217,18 +216,18 @@ impl TorPtCommunicator for PtTracing {
 
     /// Print a debug message, conform with Tor-Pt Spec
     fn debug(message: &str) -> Result<()> {
-        debug!("LOG SEVERITY=debug MESSAGE=\"{}\"", message);
+        debug!("{}", format!("LOG SEVERITY=debug MESSAGE=\"{}\"", message));
         Ok(())
     }
     /// Print an info message, conform with Tor-Pt Spec
     fn info(message: &str) -> Result<()> {
-        info!("LOG SEVERITY=info MESSAGE=\"{}\"", message);
+        info!("{}", format!("LOG SEVERITY=info MESSAGE=\"{}\"", message));
         Ok(())
     }
 
     /// Print an error message, conform with Tor-Pt Spec
     fn error(message: &str) -> Result<()> {
-        error!("LOG SEVERITY=error MESSAGE=\"{}\"", message);
+        error!("{}", format!("LOG SEVERITY=error MESSAGE=\"{}\"", message));
         Ok(())
     }
 
@@ -250,7 +249,7 @@ impl TorPtCommunicator for PtTracing {
             SEVERITY::DEBUG | SEVERITY::INFO | SEVERITY::NOTICE => {
                 // NOTE: we used warn!(..) in notice, but it's acceptable
                 // since only SEVERITY::DEBUG | SEVERITY::INFO | SEVERITY::NOTICE will entry this branch
-                warn!("LOG SEVERITY=notice MESSAGE=\"{}\"", message);
+                warn!("{}", format!("LOG SEVERITY=notice MESSAGE=\"{}\"", message));
             },
             SEVERITY::WARNING | SEVERITY::ERROR => {},
         }
@@ -259,7 +258,10 @@ impl TorPtCommunicator for PtTracing {
 
     /// Print a warning message, conform with Tor-Pt Spec
     fn warn(message: &str) -> Result<()> {
-        warn!("LOG SEVERITY=warning MESSAGE=\"{}\"", message);
+        warn!(
+            "{}",
+            format!("LOG SEVERITY=warning MESSAGE=\"{}\"", message)
+        );
         Ok(())
     }
     /// After version negotiation has been completed, the PT proxy must then

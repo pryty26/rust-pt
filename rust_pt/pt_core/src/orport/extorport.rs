@@ -33,6 +33,45 @@ pub type CookieString = [u8; 32];
 /// Maximum size: 255 values + 1 terminator = 256 bytes.
 pub type AuthNegBuf = [u8; 256];
 
+/// A producer for extorport
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[non_exhaustive]
+pub struct ExtOrProd {
+    /// the address of the extorport that tor binds
+    pub extorport_addr: SocketAddr,
+    /// the path that stores `cookie_file`
+    pub cookie_file_path: PathBuf,
+}
+/// A producer for orport
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[non_exhaustive]
+pub struct OrProd {
+    /// `OrProd`s address that tor binds
+    pub orport_addr: SocketAddr,
+}
+
+impl OrProd {
+    /// Connect to the orport
+    /// # Errors
+    /// - if tokio `TcpStream` connect returns Error
+    pub async fn connect_orport(&self) -> Result<TcpStream, ExtOrPortError> {
+        Ok(TcpStream::connect(self.orport_addr).await?)
+    }
+}
+
+impl ExtOrProd {
+    /// Connect to the extorport
+    /// # Errors
+    /// - [`ExtOrPort::connect`]. returns Error
+    pub async fn connect_extorport(&self) -> Result<ExtOrPort, ExtOrPortError> {
+        let mut ext_orport: ExtOrPort = ExtOrPort::builder()
+            .with_addr(self.extorport_addr)
+            .with_auth_cookie_file(self.cookie_file_path.clone());
+        ext_orport.connect().await?;
+        Ok(ext_orport)
+    }
+}
+
 /// Build a HMAC message
 /// # Errors
 /// Could return Error if key is invalid key for Hmac

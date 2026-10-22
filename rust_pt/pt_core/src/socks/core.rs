@@ -403,6 +403,9 @@ impl SocksConn {
     /// to `ATYP`, and stores the result into [`Self::command`],
     /// [`Self::addr`], and [`Self::port`].
     ///
+    /// # Note:
+    /// We will not return response in here
+    ///
     /// # Errors
     ///
     /// Errors that can be reported to the client with a SOCKS5 reply:
@@ -554,6 +557,7 @@ impl SocksConn {
             }
             return Err(e);
         }
+
         let port = self
             .port
             .ok_or_else(|| SocksError::PoisonedSetting("missing DST.PORT".into()))?;
@@ -562,6 +566,14 @@ impl SocksConn {
             .addr
             .clone()
             .ok_or_else(|| SocksError::PoisonedSetting("missing ADDR".into()))?;
+
+        self.reply(
+            client,
+            ReplyCode::Succeeded,
+            IpAddr::V4(Ipv4Addr::UNSPECIFIED),
+            0,
+        )
+        .await?;
 
         Ok((target, port))
     }

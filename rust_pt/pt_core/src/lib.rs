@@ -68,13 +68,23 @@ use tokio::net::TcpStream;
 pub mod init;
 /// Socks
 pub mod socks;
+use crate::orport::extorport::{ExtOrProd, OrProd};
 use std::collections::HashSet;
-
 /// To use all the traits
 pub mod prelude {
     pub use crate::Pt;
     pub use crate::orport::traits::*;
 }
+/// Kinds that are possible for `OrProd`
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[allow(clippy::exhaustive_enums)]
+pub enum OrProdKind {
+    /// `OrProd`
+    OrProd(OrProd),
+    /// `ExtOrProd`
+    ExtOrProd(ExtOrProd),
+}
+
 /// The core config for PT
 /// User have to call the builder to build that
 /// When `with_sup_transports(...)` is set before `try_init()`,
@@ -82,12 +92,15 @@ pub mod prelude {
 /// `cmethod_error` or `smethod_error` for unsupported ones.
 /// Same goes with `with_proxy_schemes(...)`
 ///
-/// ```rust
+/// # Examples
+/// ```no_run
 /// use pt_core::Pt;
 /// use pt_tracing::{prelude::*};
 /// use std::collections::HashSet;
-/// fn main() {
-///     let pt = Pt::builder()
+/// use anyhow::Result;
+/// #[tokio::main]
+/// async fn main() -> Result<()>{
+///     let mut pt = Pt::builder()
 ///         .with_severity(SEVERITY::INFO)
 ///         .with_sup_transports(Some(vec!["rust-pt".to_string(), "uat".to_string()]))
 ///         .with_proxy_schemes(Some(HashSet::from(["socks5".to_string()])));
@@ -95,12 +108,46 @@ pub mod prelude {
 ///     // Then, user can call try_init(),
 ///     // but since we are not setting the env config in docs test,
 ///     // so just leave it for now
-///     // pt.try_init();
-///     // pt.connect_or();
+///     pt.try_init()?;
+///     pt.connect_or().await?;
+///     Ok(())
 /// }
 ///
 /// ```
-#[derive(Deftly)]
+///
+/// # `OrPort` Examples
+///
+/// ```no_run
+///
+/// use pt_core::{Pt, OrProdKind};
+/// use pt_tracing::{prelude::*};
+/// use std::collections::HashSet;
+/// use anyhow::Result;
+/// #[tokio::main]
+/// async fn main() -> Result<()>{
+///     let mut pt = Pt::builder()
+///         .with_severity(SEVERITY::INFO)
+///         .with_sup_transports(Some(vec!["rust-pt".to_string(), "aspt".to_string()]))
+///         .with_proxy_schemes(Some(HashSet::from(["socks5".to_string()])));
+///     pt.try_init()?;
+///     let producer = pt.prod_or()?;
+///
+///     match producer {
+///         OrProdKind::OrProd(prod) => {
+///             let stream = prod.connect_orport().await?;
+///             // Use the ORPort stream.
+///         }
+///         OrProdKind::ExtOrProd(prod) => {
+///             let stream = prod.connect_extorport().await?;
+///             // Use the ExtORPort stream.
+///         }
+///     }
+///     Ok(())
+/// }
+/// ```
+///
+///
+#[derive(Deftly, Clone)]
 #[derive_deftly(Builder)] // See [`rust-pt\rust_pt\pt_config\src\macros.rs`]
 #[non_exhaustive]
 pub struct Pt {
@@ -198,7 +245,46 @@ impl Pt {
             )),
         }
     }
-
+    /// Get the extorport manager, user can freely call `.connect_or()` using that
+    /// # Errors
+    /// - Pt is not initialized, or config is not for `server`
+    /// - settings for `ExtOrPort` settings are unfound
+    pub fn get_extorport_prod(&self) -> Result<ExtOrProd, PtError> {
+        let server_key = self.get_server_config()?;
+        if let Some(extorport_addr) = server_key.TOR_PT_EXTENDED_SERVER_PORT
+            && let Some(cookie_file_path) = server_key.TOR_PT_AUTH_COOKIE_FILE.clone()
+        {
+            return Ok(ExtOrProd {
+                extorport_addr,
+                cookie_file_path,
+            });
+        }
+        Err(PtError::NotOrPort("No OrPort settings".to_string()))
+    }
+    /// Get the extorport manager, user can freely call `.connect_or()` using that
+    /// # Errors
+    /// - Pt is not initialized, or config is not for `server`
+    /// - settings for `OrPort` settings are unfound
+    pub fn get_orport_prod(&self) -> Result<OrProd, PtError> {
+        let server_key = self.get_server_config()?;
+        if let Some(orport_addr) = server_key.TOR_PT_ORPORT {
+            return Ok(OrProd { orport_addr });
+        }
+        Err(PtError::ExtOrPortNotAvailable(
+            "No ExtOrPort settings".to_string(),
+        ))
+    }
+    /// Try get the extorport or orport manager, if [`Pt::get_extorport_prod`] fails
+    /// we will fall back to the orport
+    ///
+    /// # Errors
+    /// - [`Pt::get_extorport_prod`] and [`Pt::get_orport_prod`] both fails
+    pub fn prod_or(&self) -> Result<OrProdKind, PtError> {
+        match self.get_extorport_prod() {
+            Ok(extorprod) => Ok(OrProdKind::ExtOrProd(extorprod)),
+            Err(_) => Ok(OrProdKind::OrProd(self.get_orport_prod()?)),
+        }
+    }
     /// Get the config as mutable, and ensure that it is `ServerConfig`.
     /// Only return the `server_key` part.
     ///

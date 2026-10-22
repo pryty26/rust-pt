@@ -4,7 +4,6 @@
 //======================================================================
 use crate::orport::extorport::ExtOrPort;
 use crate::{OrPortKind, Pt};
-use anyhow::Result;
 use pt_config::prelude::*;
 use pt_err::PtError;
 use pt_tracing::prelude::*;
@@ -140,20 +139,20 @@ impl Pt {
     ///
     /// # Panics
     /// -  if environment are not set or contains incorrect settings
-    pub fn try_init(&mut self) -> Result<()> {
+    pub fn try_init(&mut self) -> Result<(), PtError> {
         PtTracing::fmt().with_severity(self.severity).try_init()?;
         PtTracing::notice("initing the Pt")?; // Could Panic (See docs of notice())
         self.config_key = {
             let config_key = ConfigKey::init();
-            // Filter the unsupported transports
-            self.filter_transports()?;
-            self.filter_url()?;
             // Invariant: the `TOR_PT_MANAGED_TRANSPORT_VER` must not be empty
             // But we have already made sure in deserialization's validation, that it is not empty
             // Thus, it is safe here
             PtTracing::version(&config_key.common_key().TOR_PT_MANAGED_TRANSPORT_VER[0]);
             Some(config_key)
         }; // Could Panic (See docs of init())
+        // Filter the unsupported transports
+        self.filter_transports()?;
+        self.filter_url()?;
         Ok(())
     }
     /// try to connect into extorport
@@ -161,7 +160,7 @@ impl Pt {
     ///
     /// # Errors
     /// if Pt is not initialized
-    pub async fn try_extorport(&mut self) -> Result<ExtOrPort, PtError> {
+    pub async fn try_extorport(&self) -> Result<ExtOrPort, PtError> {
         let server_key = self.get_server_config()?;
         if let Some(ext_addr) = server_key.TOR_PT_EXTENDED_SERVER_PORT
             && let Some(ext_cookie_file) = server_key.TOR_PT_AUTH_COOKIE_FILE.clone()
@@ -178,7 +177,6 @@ impl Pt {
             "invalid or empty Config".to_string(),
         ))
     }
-
     /// Connect to the `ExtOrPort`
     /// if there is not a `ExtOrPort`
     /// we will use `OrPort` instead
@@ -186,7 +184,7 @@ impl Pt {
     /// # Errors
     /// if Pt is not initialized, or `connect` fails
     /// (See [`ExtOrPort::connect`])
-    pub async fn connect_or(&mut self) -> Result<OrPortKind, PtError> {
+    pub async fn connect_or(&self) -> Result<OrPortKind, PtError> {
         if self.is_client()? {
             return Err(PtError::ClientOrPortUnavailable);
         }
