@@ -85,6 +85,38 @@ pub enum OrProdKind {
     ExtOrProd(ExtOrProd),
 }
 
+impl OrProdKind {
+    /// Try to `connect_or`
+    /// returns:
+    /// - returns [`OrPortKind::ExtOrPort`]
+    ///   if &self is [`OrProdKind::ExtOrProd`]
+    /// - returns [`OrPortKind::OrPort`]
+    ///   if &self is [`OrProdKind::OrProd`]
+    ///
+    /// # Errors
+    /// - if [`ExtOrProd::connect_extorport`] fails
+    /// - if [`OrProd::connect_orport`] fails
+    pub async fn connect_or(&self) -> Result<OrPortKind, PtError> {
+        match self {
+            OrProdKind::ExtOrProd(extor_prod) => {
+                Ok(OrPortKind::ExtOrPort(extor_prod.connect_extorport().await?))
+            },
+            OrProdKind::OrProd(or_prod) => Ok(OrPortKind::OrPort(or_prod.connect_orport().await?)),
+        }
+    }
+    /// Calls [`OrProdKind::connect_or`] and
+    /// [`ExtOrPort::reunite`] if the result is [`ExtOrPort`]
+    ///
+    /// # Errors
+    /// [`OrProdKind::connect_or`] or [`ExtOrPort::reunite`] fails
+    pub async fn connect_or_tcpstream(&self) -> Result<TcpStream, PtError> {
+        match self.connect_or().await? {
+            OrPortKind::ExtOrPort(mut extorport) => Ok(extorport.reunite()?),
+            OrPortKind::OrPort(orport) => Ok(orport),
+        }
+    }
+}
+
 /// The core config for PT
 /// User have to call the builder to build that
 /// When `with_sup_transports(...)` is set before `try_init()`,
