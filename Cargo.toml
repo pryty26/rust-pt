@@ -1,15 +1,15 @@
 [workspace]
 members = [
-    "rust_pt/pt_err",
-    "rust_pt/pt_tracing",
-    "rust_pt/pt_config",
+    #"rust_pt/pt_err",
+    #"rust_pt/pt_tracing",
+    #"rust_pt/pt_config",
     "rust_pt/pt_core",
-    "transports/aspt",
+    #"transports/aspt",
 ]
 resolver = "2"
 
 [workspace.package]
-version     = "0.0.0-alpha.5"
+version     = "0.0.0-beta.0"
 edition     = "2024"
 license     = "MIT OR Apache-2.0 OR AGPL-3.0-or-later"
 repository  = "https://gitlab.torproject.org/pryty26/rust-pt"
@@ -22,10 +22,10 @@ name = "rust-pt"
 
 [workspace.dependencies]
 # Internal crates
-pt_err     = { version = "0.0.0-alpha.5" }
-pt_core    = { version = "0.0.0-alpha.5" }
-pt_config  = { version = "0.0.0-alpha.5" }
-pt_tracing = { version = "0.0.0-alpha.5" }
+pt_err     = { version = "0.0.0-beta.0" }
+pt_core    = { version = "0.0.0-beta.0" }
+pt_config  = { version = "0.0.0-beta.0" }
+pt_tracing = { version = "0.0.0-beta.0" }
 
 # Core utilities
 anyhow          = "1.0.104"

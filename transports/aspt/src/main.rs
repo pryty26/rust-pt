@@ -51,25 +51,26 @@
 #![deny(clippy::pedantic)] // This is not in Arti
 //! <!-- @@ end lint list
 
+
 //! Welcome to the official example of rust-pt!
 //! ヾ(•ω•`)o
-
+// this is an example, so code quality doesn't matter
+#![allow(clippy::missing_docs_in_private_items)]
 #![allow(clippy::print_stdout)]
-use std::net::SocketAddr;
 use tokio::net::TcpListener;
 use tokio::{io::copy_bidirectional, net::TcpStream};
-// this is an example, so code quality doesn't matter
 use pt_config::configs::{
     core::ConfigKey,
     keys::{ClientKey, CommonKey, ServerKey},
 };
+use pt_core::{OrProdKind, prelude::*};
 use pt_core::socks::core::SocksConn;
-use pt_core::{OrPortKind, prelude::*};
 use pt_err::PtError;
 use std::collections::HashSet;
 // Note: Do not use `pt_tracing::PtTracing`
 // use prelude instead
 use pt_tracing::{SEVERITY, prelude::*};
+
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     // When `with_sup_transports(...)` is set before `try_init()`,
@@ -84,100 +85,136 @@ async fn main() -> anyhow::Result<()> {
             "http".to_string(),
         ])));
     pt.try_init()?;
+
     if pt.is_server()? {
-        let server_config: &ServerKey = pt.get_server_config()?;
-        let server_transports = server_config.TOR_PT_SERVER_TRANSPORTS.clone();
-        for _ in &server_transports {
-            let addr = "127.0.0.1:2837".parse::<SocketAddr>()?;
-            let listener = super_cool_launch(addr).await?;
-            // ( PTs should launch their PT here, and check whether they supports that transport)
-            PtTracing::smethod("cool_transport", &addr.to_string(), None);
-            let (mut stream, _addr) = listener.accept().await?;
-            let mut orport_connection = match pt.connect_or().await? {
-                OrPortKind::ExtOrPort(mut extorport) => {
-                    // Finish Sends the full `ExtOrPort` handshake for a new client connection:
-                    // `TRANSPORT` → `USERADDR` → `DONE`/`OKAY`.
-                    extorport
-                        .finish("cool_transport".to_string(), addr.to_string())
-                        .await?;
-                    extorport.reunite()?
-                },
-                OrPortKind::OrPort(orport) => orport,
-            };
-            copy_bidirectional(&mut orport_connection, &mut stream).await?;
-        }
-        return Ok(());
+        run_server(&pt).await;
     }
+
     // I know I can just use `else`
     // But this is for showing that `is_client()` is also supported
     if pt.is_client()? {
-        PtTracing::info("In the client")?;
-        // Note that we will automatically send `Proxy Done` and `Version`
-        // ( I have wrote a lot of docs so you can read them )
-        let client_config: &ClientKey = pt.get_client_config()?;
-        let _common_config: &CommonKey = pt.get_common_config()?;
-
-        // they may return Errors that are defined in the pt_err
-        // # Errors
-        // Returns an error
-        // - `Pt` is not initialized
-        // - the config is not for a client.
-        // These are in the docs comment too.
-        let client_result: Result<&ClientKey, PtError> = pt.get_client_config();
-        match client_result {
-            Ok(_) => {},
-            Err(PtError::NotInClient(string)) => {
-                // Here is the log system,
-                // inherently compatible with pt-spec format
-                PtTracing::error(&format!("Not in the client {string}"))?;
-            },
-            Err(e) => {
-                // Other errors
-                PtTracing::error(&e.to_string())?;
-            },
-        }
-        // Or, get a whole config
-        let _whole_config: &ConfigKey = pt.get()?;
-
-        // The name of these structures' variables follows directly pt-spec
-        // transports
-        let _: &Vec<String> = &client_config.TOR_PT_CLIENT_TRANSPORTS;
-
-        // Or you can `clone()` them
-        let _client_config_clone: ClientKey = pt.get_client_config()?.clone();
-        // We have to launch a socks port, and the Tor will use it
-        let listener = TcpListener::bind("127.0.0.1:9050").await?;
-        tokio::spawn(async move {
-            let _: anyhow::Result<_> = async {
-                loop {
-                    let (mut client, _) = listener.accept().await?;
-
-                    tokio::spawn(async move {
-                        let _: anyhow::Result<_> = async {
-                            let mut server_socks_mgr: SocksConn = SocksConn::builder();
-
-                            server_socks_mgr.handle_connect(&mut client).await?;
-
-                            // Yep, if you uses `String::try_from()`
-                            // You will get the address that is indicated by socks client
-                            let addr: String = String::try_from(&server_socks_mgr)?;
-                            let mut upstream = TcpStream::connect(addr).await?;
-                            copy_bidirectional(&mut client, &mut upstream).await?;
-                            #[allow(unreachable_code)]
-                            Ok(())
-                        }
-                        .await;
-                    });
-                }
-                #[allow(unreachable_code)]
-                Ok(())
-            }
-            .await;
-        });
+        run_client(&pt).await?;
     }
+
     Ok(())
 }
-/// Super cool transport
-async fn super_cool_launch(addr: SocketAddr) -> anyhow::Result<TcpListener> {
-    Ok(TcpListener::bind(addr).await?)
+
+async fn run_server(pt: &Pt) {
+    let server_transports = {
+        let server_config: &ServerKey = match pt.get_server_config() {
+            Ok(cfg) => cfg,
+            Err(e) => {
+                PtTracing::error(&e.to_string()).ok();
+                return;
+            },
+        };
+        server_config.TOR_PT_SERVER_TRANSPORTS.clone()
+    };
+
+    for transport_name in &server_transports {
+        let addr = {
+            let cfg = match pt.get_server_config() {
+                Ok(cfg) => cfg,
+                Err(e) => {
+                    PtTracing::smethod_error(transport_name, &e.to_string());
+                    continue;
+                },
+            };
+            *cfg.TOR_PT_SERVER_BINDADDR
+                .get(transport_name.as_str())
+                .expect("addr unfound")
+        };
+
+        let prod_or = match pt.prod_or() {
+            Ok(prod_or) => prod_or,
+            Err(e) => {
+                PtTracing::smethod_error(transport_name, &e.to_string());
+                continue;
+            },
+        };
+
+        tokio::spawn(async move {
+            if let Err(e) = serve_one(addr, prod_or).await {
+                PtTracing::error(&e.to_string()).ok();
+            }
+        });
+    }
+
+    std::future::pending::<()>().await;
+}
+
+async fn serve_one(addr: std::net::SocketAddr, prod_or: OrProdKind) -> anyhow::Result<()> {
+    let listener = TcpListener::bind(addr).await?;
+    let mut orport_connection = prod_or.connect_or_tcpstream().await?;
+
+    let addr = listener.local_addr()?;
+    // ( PTs should launch their PT here, and check whether they supports that transport)
+    PtTracing::smethod("cool_transport", &addr.to_string(), None);
+    let (mut stream, _addr) = listener.accept().await?;
+    copy_bidirectional(&mut orport_connection, &mut stream).await?;
+    Ok(())
+}
+
+async fn run_client(pt: &Pt) -> anyhow::Result<()> {
+    PtTracing::info("In the client")?;
+    // Note that we will automatically send `Proxy Done` and `Version`
+    // ( I have wrote a lot of docs so you can read them )
+    let client_config: &ClientKey = pt.get_client_config()?;
+    let _common_config: &CommonKey = pt.get_common_config()?;
+
+    // they may return Errors that are defined in the pt_err
+    // # Errors
+    // Returns an error
+    // - `Pt` is not initialized
+    // - the config is not for a client.
+    // These are in the docs comment too.
+    let client_result: Result<&ClientKey, PtError> = pt.get_client_config();
+    match client_result {
+        Ok(_) => {},
+        Err(PtError::NotInClient(string)) => {
+            // Here is the log system,
+            // inherently compatible with pt-spec format
+            PtTracing::error(&format!("Not in the client {string}"))?;
+        },
+        Err(e) => {
+            // Other errors
+            PtTracing::error(&e.to_string())?;
+        },
+    }
+    // Or, get a whole config
+    let _whole_config: &ConfigKey = pt.get()?;
+
+    // The name of these structures' variables follows directly pt-spec
+    // transports
+    let _: &Vec<String> = &client_config.TOR_PT_CLIENT_TRANSPORTS;
+
+    // Or you can `clone()` them
+    let _client_config_clone: ClientKey = pt.get_client_config()?.clone();
+    // We have to launch a socks port, and the Tor will use it
+    let listener = TcpListener::bind("127.0.0.1:0").await?;
+    let addr = listener.local_addr()?;
+    // ( PTs should launch their PT here, and check whether they supports that transport)
+    PtTracing::cmethod("cool_transport", "socks5", &addr.to_string());
+    loop {
+        let (client, _) = listener.accept().await?;
+
+        tokio::spawn(async move {
+            if let Err(e) = handle_socks_client(client).await {
+                PtTracing::error(&e.to_string()).ok();
+            }
+        });
+    }
+}
+
+async fn handle_socks_client(mut client: TcpStream) -> anyhow::Result<()> {
+    let mut server_socks_mgr: SocksConn = SocksConn::builder();
+
+    server_socks_mgr.handle_connect(&mut client).await?;
+
+    // Yep, if you uses `String::try_from()`
+    // You will get the address that is indicated by socks client
+    let target: String = String::try_from(&server_socks_mgr)?;
+    let mut upstream = TcpStream::connect(target).await?;
+    copy_bidirectional(&mut client, &mut upstream).await?;
+    Ok(())
 }
