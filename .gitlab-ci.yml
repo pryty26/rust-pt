@@ -14,6 +14,7 @@ workflow:
     - rustup component add clippy
     - rustc --version
     - cargo --version
+    - cargo install cargo-audit
 
 test_job:
   extends: .rust_base
@@ -23,3 +24,4 @@ test_job:
     - cargo test --workspace --all-targets --features full
     - cargo clippy --workspace --all-targets -- -D clippy::pedantic  -D clippy::missing_docs_in_private_items -D missing_docs -D clippy::all
     - cargo test --workspace --all-targets
+    - cargo audit
