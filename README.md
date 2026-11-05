@@ -83,6 +83,10 @@ F*ck anti-democratic!
 F*ck invasion of privacy!
 
 Give us liberty, or give us death!
+
+No matter whether your opinions and speech are true, reasonable, bad, inaccurate, or anything else, 
+you still have -- always have had -- and always will have -- the right to hold, express, and defend them.
+
 Let's no more counting dollars we would be counting stars.
 Seek that fun and ye shall find!
 
