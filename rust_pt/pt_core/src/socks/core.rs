@@ -596,7 +596,7 @@ impl SocksConn {
         &mut self,
         stream: &mut TcpStream,
     ) -> Result<(), SocksError> {
-        let mut buf = Vec::with_capacity(2 + SUPPORTED_AUTH_METHODS.len());
+        let mut buf = Vec::with_capacity(1 + 1 + SUPPORTED_AUTH_METHODS.len());
         buf.push(u8::from(SocksVer::V5));
         self.version = Some(SocksVer::V5);
 

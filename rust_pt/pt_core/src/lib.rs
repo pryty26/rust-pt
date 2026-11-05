@@ -463,7 +463,7 @@ impl Pt {
         }
         Err(PtError::NotOrPort("No OrPort settings".to_string()))
     }
-    /// Get the extorport manager, user can freely call `.connect_or()` using that
+    /// Get the orport manager, user can freely call `.connect_or()` using that
     /// # Errors
     /// - Pt is not initialized, or config is not for `server`
     /// - settings for `OrPort` settings are unfound
