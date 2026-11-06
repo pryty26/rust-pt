@@ -8,7 +8,7 @@
 //! Welcome to the official example of rust-pt!
 //! !(•ω•)o
 //! // this is an example, so code quality doesn't matter
-//! ```rust no-run
+//! ```rust no_run
 //! #![allow(clippy::missing_docs_in_private_items)]
 //! #![allow(clippy::print_stdout)]
 //! use tokio::net::TcpListener;

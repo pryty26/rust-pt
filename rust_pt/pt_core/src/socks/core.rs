@@ -39,13 +39,22 @@ pub enum SocksVer {
 /// ```rust,no_run
 /// use pt_core::socks::core::SocksConn;
 /// use anyhow::Result;
-/// use tokio::net::TcpListener;
+/// use tokio::net::{TcpListener, TcpStream};
+/// use tokio::io::copy_bidirectional;
+/// 
 /// #[tokio::main]
 /// async fn main() -> Result<()> {
 ///     let listener = TcpListener::bind("127.0.0.1:9050").await?;
 ///     let (mut client, _) = listener.accept().await?;
+/// 
+///     // In production, you may need `loop` and `tokio::spawn`
 ///     let mut conn = SocksConn::builder();
 ///     conn.handle_connect(&mut client).await?;
+///     // Yep, if you uses `String::try_from()`
+///     // You will get the address that is indicated by socks client
+///     let target: String = String::try_from(&conn)?;
+///     let mut upstream = TcpStream::connect(target).await?;
+///     copy_bidirectional(&mut client, &mut upstream).await?;
 ///     Ok(())
 /// }
 ///
